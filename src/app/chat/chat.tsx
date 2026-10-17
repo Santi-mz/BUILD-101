@@ -377,7 +377,7 @@ export default function Chat() {
                       }
                     }}
                     readOnly={recording}
-                    placeholder={recording ? "Te escucho… tocá el cuadrado para terminar" : "Escribí tu respuesta o tocá el micrófono"}
+                    placeholder={recording ? "Te escucho…" : "Escribí o hablá…"}
                     className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-[15px] outline-none"
                   />
                   <button
