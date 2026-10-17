@@ -7,7 +7,7 @@ import OpportunitiesPanel from "@/components/opportunities-panel";
 import SaveAccount from "@/components/save-account";
 import { getFeed, isFresh } from "@/lib/feed";
 import { getNode, matchProfile } from "@/lib/graph";
-import { MAX_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, topThree, type ProfileData, type RiasecKey } from "@/lib/profile";
+import { CONFIDENCE_THRESHOLD, MAX_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, topThree, type ProfileData, type RiasecKey } from "@/lib/profile";
 import { supabaseServer } from "@/lib/supabase/server";
 
 const TYPE_LABEL = { carrera: "Carrera", curso: "Curso", pasantia: "Pasantía", empleo: "Empleo", beca: "Beca" };
@@ -27,6 +27,19 @@ const CTA_CLASS =
   "inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-background shadow-sm transition hover:opacity-90";
 const SECONDARY_CLASS =
   "inline-flex min-h-11 items-center rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium transition hover:border-accent";
+
+const REC_CARD = "flex flex-col rounded-3xl border border-border bg-card p-5 sm:p-6";
+
+/** Solo enlaces http(s) bien formados; cualquier otra cosa se muestra como tarjeta sin enlace. */
+function webUrl(url?: string) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 
 const EMPTY_POINTS = [
   { title: "Tu código RIASEC", body: "Tus tres intereses más fuertes según el modelo de Holland, con el nivel de confianza de cada uno." },
@@ -198,7 +211,10 @@ async function PerfilInner() {
                   <h3 className="font-semibold">
                     <span className="mr-1 font-mono text-accent">{k}</span> {RIASEC_LABELS[k]}
                   </h3>
-                  <span className="font-mono text-sm text-muted">{Math.round(p.riasec[k].score * 100)}%</span>
+                  <span className="font-mono text-sm text-muted">
+                    <span className="sr-only">Fuerza del interés: </span>
+                    {Math.round(p.riasec[k].score * 100)}/100
+                  </span>
                 </div>
                 <p className="mt-2 text-sm text-muted">{RIASEC_DESC[k]}</p>
                 {reasons.map((r) => (
@@ -216,37 +232,80 @@ async function PerfilInner() {
       {/* Los seis intereses */}
       <section>
         <SectionTitle eyebrow="Mapa de intereses" title="Tus seis intereses">
-          La barra clara es el margen de duda: se achica a medida que el agente confirma cada interés.
+          Qué tan fuerte aparece cada interés en lo que contaste, de 0 a 100. No es una nota ni una probabilidad.
         </SectionTitle>
-        <div className="rounded-3xl border border-border bg-card p-6">
-          <div className="space-y-3">
+        <div className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+          <ul className="mb-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="h-2.5 w-6 rounded-full bg-accent" />
+              Fuerza del interés
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="h-2.5 w-6 overflow-hidden rounded-full bg-accent-soft">
+                <span className="block h-full w-full bg-accent/25" />
+              </span>
+              Margen de duda: se achica a medida que el agente confirma el interés
+            </li>
+          </ul>
+          <ul className="space-y-3">
             {RIASEC_KEYS.map((k) => {
               const s = p.riasec[k].score;
               const doubt = (1 - p.riasec[k].confidence) * 0.3;
+              const value = Math.round(s * 100);
+              // Mismo umbral con el que el servidor da un interés por confirmado.
+              const confirmed = p.riasec[k].confidence >= CONFIDENCE_THRESHOLD;
               return (
-                <div key={k} className="grid grid-cols-[120px_1fr_44px] items-center gap-3 text-sm">
-                  <span className={top.includes(k) ? "font-medium" : "text-muted"}>{RIASEC_LABELS[k]}</span>
-                  <div className="relative h-3 overflow-hidden rounded-full bg-accent-soft">
+                <li key={k} className="grid grid-cols-[6.5rem_1fr_2.5rem] items-center gap-3 text-sm sm:grid-cols-[9rem_1fr_3rem]">
+                  <span id={`interes-${k}`} className={top.includes(k) ? "font-medium" : "text-muted"}>
+                    {RIASEC_LABELS[k]}
+                  </span>
+                  <div
+                    role="meter"
+                    aria-labelledby={`interes-${k}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={value}
+                    aria-valuetext={`${value} de 100, ${confirmed ? "confirmado" : "por confirmar"}`}
+                    className="relative h-3 overflow-hidden rounded-full bg-accent-soft"
+                  >
                     <div className="absolute inset-y-0 left-0 rounded-full bg-accent/25" style={{ width: `${Math.min(100, (s + doubt) * 100)}%` }} />
                     <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${s * 100}%` }} />
                   </div>
-                  <span className="text-right font-mono text-xs text-muted">{Math.round(s * 100)}</span>
-                </div>
+                  <span aria-hidden className="text-right font-mono text-xs text-muted">
+                    {value}
+                  </span>
+                </li>
               );
             })}
-          </div>
+          </ul>
           {(p.strengths.length > 0 || p.values.length > 0) && (
-            <div className="mt-6 flex flex-wrap gap-2">
-              {p.strengths.map((s) => (
-                <span key={s} className="rounded-full bg-accent-soft px-3 py-1 text-xs text-accent">
-                  {s}
-                </span>
-              ))}
-              {p.values.map((s) => (
-                <span key={s} className="rounded-full border border-border px-3 py-1 text-xs text-muted">
-                  {s}
-                </span>
-              ))}
+            <div className="mt-6 grid gap-6 border-t border-border pt-6 sm:grid-cols-2">
+              {p.strengths.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Fortalezas</h3>
+                  <p className="mt-1 text-xs text-muted">Habilidades que el agente detectó en la charla.</p>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {p.strengths.map((s) => (
+                      <li key={s} className="rounded-full bg-accent-soft px-3 py-1.5 text-sm text-accent sm:text-xs">
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {p.values.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-muted">Valores</h3>
+                  <p className="mt-1 text-xs text-muted">Lo que te importa en un trabajo.</p>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {p.values.map((s) => (
+                      <li key={s} className="rounded-full border border-border px-3 py-1.5 text-sm text-muted sm:text-xs">
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -257,20 +316,37 @@ async function PerfilInner() {
         <section>
           <SectionTitle eyebrow="Próximos pasos" title="Tus recomendaciones" />
           <div className="grid gap-4 sm:grid-cols-2">
-            {p.recommendations.map((r) => (
-              <a
-                key={r.title}
-                href={r.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group flex flex-col rounded-3xl border border-border bg-card p-5 transition hover:border-accent"
-              >
-                <span className="w-fit rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">{TYPE_LABEL[r.type]}</span>
-                <h3 className="mt-3 font-semibold leading-snug group-hover:text-accent">{r.title}</h3>
-                <p className="mt-2 flex-1 text-sm text-muted">{r.why}</p>
-                {r.url && <span className="mt-3 text-xs font-medium text-accent">Ver más ↗</span>}
-              </a>
-            ))}
+            {p.recommendations.map((r) => {
+              const href = webUrl(r.url);
+              const content = (
+                <>
+                  <span className="w-fit rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">{TYPE_LABEL[r.type]}</span>
+                  <h3 className="mt-3 font-semibold leading-snug group-hover:text-accent">{r.title}</h3>
+                  <p className="mt-2 flex-1 text-sm text-muted">{r.why}</p>
+                  {href && (
+                    <span className="mt-4 text-sm font-medium text-accent">
+                      Ver más <span aria-hidden>↗</span>
+                      <span className="sr-only"> (se abre en otra pestaña)</span>
+                    </span>
+                  )}
+                </>
+              );
+              return href ? (
+                <a
+                  key={r.title}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`group ${REC_CARD} transition hover:-translate-y-0.5 hover:border-accent hover:shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background`}
+                >
+                  {content}
+                </a>
+              ) : (
+                <div key={r.title} className={REC_CARD}>
+                  {content}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -293,7 +369,9 @@ async function PerfilInner() {
               </Link>
             }
           >
-            Noticias reales de esta semana, ordenadas por afinidad con tu perfil.
+            {final
+              ? "Noticias reales y recientes, ordenadas por afinidad con tu perfil."
+              : "Noticias reales y recientes, ordenadas según lo que sabemos de tu perfil hasta ahora."}
           </SectionTitle>
           <div className="grid gap-3 sm:grid-cols-2">
             {news.map((n) => (
