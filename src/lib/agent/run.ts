@@ -7,7 +7,8 @@ import { SYSTEM_PROMPT } from "./prompt";
 
 // Modelos con plan gratis de la Gemini API (Google AI Studio), en orden de preferencia.
 // Si uno está saturado (503) o al límite (429), se prueba el siguiente.
-export const MODELS = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-lite-latest"];
+// LLM_MODEL (opcional, de Santi) permite forzar un modelo primero.
+export const MODELS = [...new Set([process.env.LLM_MODEL, "gemini-flash-latest", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-lite-latest"].filter(Boolean) as string[])];
 
 // Modelos que agotaron su cuota diaria gratis: se saltean por un rato para no perder tiempo reintentando.
 const exhaustedUntil = new Map<string, number>();

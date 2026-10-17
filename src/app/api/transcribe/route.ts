@@ -1,3 +1,4 @@
+import { loadSession } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { transcribe } from "@/lib/transcribe";
 
@@ -6,11 +7,10 @@ const MAX_BYTES = 4 * 1024 * 1024; // ~2 minutos de WAV mono a 16 kHz; límite d
 
 /** Voz a texto para el chat: el navegador manda WAV y Gemini lo transcribe. */
 export async function POST(req: Request) {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "No autorizado" }, { status: 401 });
+  // Vale una sesión de exploración activa (sin cuenta) o un usuario logueado.
+  const session = await loadSession();
+  const user = session ? null : (await (await supabaseServer()).auth.getUser()).data.user;
+  if (!session && !user) return Response.json({ error: "No autorizado" }, { status: 401 });
 
   const audio = Buffer.from(await req.arrayBuffer());
   if (audio.length === 0) return Response.json({ error: "No llegó audio." }, { status: 400 });

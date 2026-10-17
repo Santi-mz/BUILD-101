@@ -36,7 +36,7 @@ export default function ComparePaths({ options }: { options: Option[] }) {
       <select value={value} onChange={(e) => set(e.target.value)} className="w-full rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-accent">
         {options.map((o) => (
           <option key={o.id} value={o.id}>
-            {o.name} ({o.match}%)
+            {o.name}
           </option>
         ))}
       </select>
@@ -64,10 +64,10 @@ export default function ComparePaths({ options }: { options: Option[] }) {
                 <tr>
                   <th className="px-4 py-3 font-medium" />
                   <th className="px-4 py-3 font-medium">
-                    {res.a.name} <span className="font-mono text-accent">{res.a.affinity}%</span>
+                    {res.a.name}
                   </th>
                   <th className="px-4 py-3 font-medium">
-                    {res.b.name} <span className="font-mono text-accent">{res.b.affinity}%</span>
+                    {res.b.name}
                   </th>
                 </tr>
               </thead>

@@ -47,3 +47,35 @@ create policy "own conversation" on public.conversations
 -- Las noticias son públicas para leer; solo el cron (service role) escribe.
 drop policy if exists "news readable" on public.news;
 create policy "news readable" on public.news for select using (true);
+
+-- ============================================================================
+-- Conectate con tu futuro: sesiones de exploración vocacional (sin cuenta).
+-- El estado completo (mensajes enmascarados, evidencias, niveles, rutas) va en state.
+-- Solo el servidor accede, con service role: RLS activado y sin políticas públicas.
+-- ============================================================================
+create table if not exists public.vocational_sessions (
+  id uuid primary key,
+  user_id uuid references auth.users (id) on delete cascade,
+  state jsonb not null,
+  status text not null default 'ACTIVE' check (status in ('ACTIVE', 'COMPLETED', 'SAFETY_STOP', 'DELETED')),
+  rubric_version text not null,
+  prompt_version text not null,
+  model text not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists vocational_sessions_expires_idx on public.vocational_sessions (expires_at);
+create index if not exists vocational_sessions_user_idx on public.vocational_sessions (user_id);
+
+-- Auditoría mínima (sin contenido de la persona): borrados, purgas por vencimiento.
+create table if not exists public.audit_events (
+  id bigint generated always as identity primary key,
+  event text not null,
+  session_id uuid,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.vocational_sessions enable row level security;
+alter table public.audit_events enable row level security;

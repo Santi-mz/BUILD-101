@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // Refresca la sesión de Supabase en cada request (Next 16: "proxy" reemplaza a "middleware").
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  // Modo demo sin Supabase: no hay sesión que refrescar.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return response;
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

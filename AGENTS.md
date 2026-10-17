@@ -23,7 +23,7 @@ Somos tres trabajando en paralelo con Claude Code y Kiro. Estas reglas evitan qu
 
 | Área | Archivos | Dueño |
 |---|---|---|
-| Agente y chat | `src/lib/agent/`, `src/lib/mcp/`, `src/app/api/chat/`, `src/app/api/mcp/`, `src/app/chat/` | (a definir) |
+| Agente y chat | `src/lib/engine/`, `src/lib/agents/`, `src/lib/llm/`, `src/prompts/`, `src/knowledge/`, `src/lib/agent/`, `src/lib/mcp/`, `src/app/api/chat/`, `src/app/api/session/`, `src/app/api/mcp/`, `src/app/chat/`, `src/app/resultado/` | (a definir) |
 | Noticias y feed | `src/lib/news-sources.ts`, `src/lib/feed.ts`, `src/app/api/cron/` | (a definir) |
 | Interfaz y pitch | `src/app/page.tsx`, `src/app/perfil/`, `src/app/login/`, `src/app/layout.tsx`, `src/app/globals.css` | (a definir) |
 | **Compartido** | `src/lib/profile.ts`, `supabase/schema.sql`, `package.json`, `src/proxy.ts`, `src/lib/supabase/` | se cambia solo avisando |
@@ -38,7 +38,9 @@ Somos tres trabajando en paralelo con Claude Code y Kiro. Estas reglas evitan qu
 
 ## Producto (no romper)
 
-- La IA es esencial, no decorativa: el perfil lo arma el agente; las noticias las etiqueta la IA; el feed se ordena por el perfil. Nada de datos mockeados.
+- La IA es esencial, no decorativa: la IA analiza cada respuesta y redacta las preguntas; las noticias las etiqueta la IA; el feed se ordena por el perfil.
+- Única excepción a "nada mockeado": el catálogo y los mentores de `src/data/*.demo.json` y el modo sin clave (`LLM_PROVIDER=mock`). Todo lo demo se rotula DEMO y nunca se muestra como disponible ni verificado.
+- El criterio científico vive en `src/knowledge/rubric.v1.json` (fuente: Documento 1). Cambiarlo es publicar una versión nueva, no editar en el lugar.
 - Modelo: Gemini (`gemini-flash-latest`, plan gratis) vía `@google/genai` (`genai()` y `MODEL` en `src/lib/agent/run.ts`). Variable: `GEMINI_API_KEY`.
-- La condición de parada del chat la decide el servidor (`shouldStop` en `src/lib/profile.ts`), no el modelo.
+- Perfil, porcentajes, próxima pregunta y cierre los decide código determinista (`src/lib/engine/profile.ts` y `planner.ts`), nunca el modelo. Antes de abrir el PR: `npm test`.
 - Textos de la app en español rioplatense.

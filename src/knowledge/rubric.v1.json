@@ -1,0 +1,373 @@
+{
+  "version": "1.0.0",
+  "source": "Documento 1 · Base de conocimiento científico del agente vocacional v1.0 (17/10/2026)",
+  "levels": [
+    {
+      "level": 0,
+      "name": "Punto de partida",
+      "stage": "Arranque",
+      "framework": "Gati (CDDQ)",
+      "exitCriteria": { "requiredIndicators": ["N0.ESTADO"], "minEvidence": 1, "requiresConfirmation": true, "maxTurns": 4 },
+      "indicators": [
+        {
+          "id": "N0.ESTADO",
+          "label": "Estado de decisión",
+          "plain": "En qué punto está para elegir: sin opciones, varias opciones o una preferida",
+          "validEvidence": ["Lo que dice explícitamente: \"no tengo idea\", \"dudo entre dos\", \"ya sé pero…\""],
+          "notEnough": ["Silencio o respuestas sobre otro tema"],
+          "allowedInferences": ["Sin opciones", "Varias opciones", "Una opción preferida"],
+          "forbiddenInferences": ["Comparar con otros", "Calificar el avance"],
+          "exampleQuestions": [
+            "Para arrancar: ¿cómo estás hoy con el tema de qué hacer después, tenés alguna idea o está todo abierto?",
+            "Si tuvieras que describir en una frase dónde estás con esto de elegir, ¿qué dirías?"
+          ]
+        },
+        {
+          "id": "N0.INFO",
+          "label": "Falta de información",
+          "plain": "No conoce bien las opciones o cómo funciona el sistema educativo",
+          "validEvidence": ["No conoce carreras, salidas o cómo funciona el sistema educativo"],
+          "notEnough": ["Decir que está confundido sin más"],
+          "allowedInferences": ["Señal de dificultad informativa"],
+          "forbiddenInferences": ["Que con información se resuelve todo"],
+          "exampleQuestions": ["¿Sentís que te falta información sobre las opciones que hay, o es otra cosa lo que más te cuesta?"]
+        },
+        {
+          "id": "N0.CONF_EXT",
+          "label": "Conflicto externo",
+          "plain": "Lo que esperan otros (familia, amigos) es distinto de lo propio",
+          "validEvidence": ["Expectativas de familia u otros que difieren de lo suyo"],
+          "notEnough": ["Mencionar a la familia sin diferencia de expectativas"],
+          "allowedInferences": ["Señal de conflicto con otros; marcar para N4.INFLUENCIA"],
+          "forbiddenInferences": ["Juzgar a la familia", "Decir que debe ignorarla"],
+          "tactGuidance": "Ser neutral entre lo que quiere la persona y lo que esperan otros; explorar ambos con el mismo peso.",
+          "exampleQuestions": ["¿Cómo es lo que esperan otros de vos en esto, y cómo se siente al lado de lo que te pasa a vos?"]
+        },
+        {
+          "id": "N0.CONF_INT",
+          "label": "Conflicto interno",
+          "plain": "Dos cosas que le importan chocan entre sí",
+          "validEvidence": ["Dos cosas que le importan chocan"],
+          "notEnough": ["Indecisión general"],
+          "allowedInferences": ["Señal de conflicto propio"],
+          "forbiddenInferences": ["Decidir cuál pesa más"],
+          "exampleQuestions": ["¿Hay dos cosas que te importan y que sentís que tiran para lados distintos?"]
+        },
+        {
+          "id": "N0.MOTIV",
+          "label": "Desmotivación",
+          "plain": "Poco interés en elegir en este momento",
+          "validEvidence": ["Desinterés general por elegir ahora"],
+          "notEnough": ["Cansancio puntual"],
+          "allowedInferences": ["Baja motivación para decidir en este momento"],
+          "forbiddenInferences": ["Depresión u otro diagnóstico"],
+          "tactGuidance": "No presionar. Está bien no tener ganas de decidir ahora; buscar algo cotidiano que le guste.",
+          "exampleQuestions": ["Está bien no tener ganas de pensar en esto ahora. ¿Qué te hizo el día un poco mejor esta semana, aunque sea algo chico?"]
+        },
+        {
+          "id": "N0.CREENCIAS",
+          "label": "Creencias rígidas",
+          "plain": "Ideas fijas que pueden trabar la decisión",
+          "validEvidence": ["\"Si me equivoco arruino mi vida\", \"hay una carrera perfecta\""],
+          "notEnough": ["Preocupación razonable"],
+          "allowedInferences": ["Creencia que puede trabar (CIP)"],
+          "forbiddenInferences": ["Rasgo de ansiedad o perfeccionismo"],
+          "tactGuidance": "Examinar la creencia con preguntas socráticas suaves (máximo 2 seguidas), sin asegurar que todo va a salir bien.",
+          "exampleQuestions": ["¿Conocés a alguien que haya cambiado de rumbo después de empezar algo, y qué le pasó?"]
+        }
+      ]
+    },
+    {
+      "level": 1,
+      "name": "Orientación general",
+      "stage": "Lo general",
+      "framework": "Prediger",
+      "exitCriteria": { "minEvidencePerAxisPair": 2, "requiresConcrete": true, "requiresConfirmation": true, "maxTurns": 5 },
+      "indicators": [
+        {
+          "id": "N1.PERSONAS",
+          "axis": "PERSONAS",
+          "label": "Polo personas",
+          "plain": "Tareas con otras personas: ayudar, convencer, enseñar",
+          "validEvidence": ["Tiempo libre, tareas del liceo que disfrutó o evitó, trabajos, voluntariados con otras personas"],
+          "notEnough": ["\"Me llevo bien con todos\""],
+          "allowedInferences": ["Lo que contás como disfrutable involucra sobre todo a otras personas"],
+          "forbiddenInferences": ["Rasgo (\"sos social\")", "Descartar áreas"],
+          "exampleQuestions": ["Pensá en algo que disfrutaste hacer hace poco: ¿estabas con otras personas o más con cosas, herramientas o materiales?"]
+        },
+        {
+          "id": "N1.COSAS",
+          "axis": "COSAS",
+          "label": "Polo cosas",
+          "plain": "Herramientas, máquinas, materiales, seres vivos",
+          "validEvidence": ["Actividades con herramientas, máquinas, materiales, plantas o animales"],
+          "notEnough": ["\"Me gusta la naturaleza\" sin actividad"],
+          "allowedInferences": ["Lo que contás como disfrutable involucra sobre todo cosas o materiales"],
+          "forbiddenInferences": ["Rasgo", "Descartar áreas"],
+          "exampleQuestions": ["Contame una vez que te quedaste un rato largo haciendo algo con las manos, una herramienta o un aparato."]
+        },
+        {
+          "id": "N1.DATOS",
+          "axis": "DATOS",
+          "label": "Polo datos",
+          "plain": "Registrar, ordenar, seguir procedimientos, que todo cierre",
+          "validEvidence": ["Disfrutar ejecutar prolijo, ordenar, seguir pasos"],
+          "notEnough": ["Ser prolijo en general"],
+          "allowedInferences": ["Te engancha más ejecutar con orden que pensar alternativas"],
+          "forbiddenInferences": ["Capacidad intelectual"],
+          "exampleQuestions": ["Cuando te toca un trabajo en grupo, ¿qué parte disfrutás más: organizar y dejar todo en orden, o pensar ideas nuevas?"]
+        },
+        {
+          "id": "N1.IDEAS",
+          "axis": "IDEAS",
+          "label": "Polo ideas",
+          "plain": "Entender, inventar, expresar, teorizar",
+          "validEvidence": ["Disfrutar pensar cómo hacerlo, proponer, imaginar"],
+          "notEnough": ["\"Soy creativo\" sin ejemplo"],
+          "allowedInferences": ["Te engancha más pensar cómo hacerlo que ejecutarlo"],
+          "forbiddenInferences": ["Capacidad intelectual"],
+          "exampleQuestions": ["Contame una vez que se te ocurrió una idea o una forma distinta de hacer algo. ¿Qué pasó?"]
+        },
+        {
+          "id": "N1.ENTUSIASMO",
+          "label": "Nivel general de interés",
+          "plain": "Cuántas cosas le despiertan entusiasmo en general",
+          "validEvidence": ["Cuántas cosas despiertan entusiasmo"],
+          "notEnough": ["Un solo comentario"],
+          "allowedInferences": ["Alto / moderado / bajo en general"],
+          "forbiddenInferences": ["Falta de vocación", "Desmotivación clínica"],
+          "exampleQuestions": ["¿Son muchas las cosas que te dan curiosidad, o hay pocas que te enganchan de verdad?"]
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "name": "Perfil de intereses",
+      "stage": "Tus intereses",
+      "framework": "Holland (RIASEC)",
+      "exitCriteria": { "minAreasWithEvidence": 1, "minEvidencePerTopArea": 2, "requiresConcrete": true, "requiresConfirmation": true, "maxTurns": 8 },
+      "indicators": [
+        {
+          "id": "N2.R",
+          "area": "R",
+          "label": "Realista",
+          "plain": "Hacer, construir, reparar, trabajar con el cuerpo, al aire libre o con animales",
+          "validEvidence": ["Arreglar cosas, deporte, campo, talleres, cocina"],
+          "notEnough": ["\"Me gusta la naturaleza\" sin actividad"],
+          "allowedInferences": ["Hacer con las manos o el cuerpo aparece en lo que contaste"],
+          "forbiddenInferences": ["Sos una persona práctica", "Deberías estudiar algo técnico"],
+          "exampleQuestions": ["¿Te acordás de algo que hayas armado, arreglado o cocinado vos? Contame cómo fue."]
+        },
+        {
+          "id": "N2.I",
+          "area": "I",
+          "label": "Investigador",
+          "plain": "Entender cómo funcionan las cosas, analizar, investigar",
+          "validEvidence": ["Buscar explicaciones por su cuenta, disfrutar problemas difíciles"],
+          "notEnough": ["Buenas notas en ciencias"],
+          "allowedInferences": ["Entender cómo funcionan las cosas aparece en lo que contaste"],
+          "forbiddenInferences": ["Sos inteligente", "Deberías estudiar ciencias"],
+          "exampleQuestions": ["¿Hubo algo que te dio tanta curiosidad que te pusiste a buscar por tu cuenta cómo funcionaba? Contame."]
+        },
+        {
+          "id": "N2.A",
+          "area": "A",
+          "label": "Artístico",
+          "plain": "Crear, expresar, diseñar con libertad",
+          "validEvidence": ["Producir algo propio: dibujo, música, video, escritura"],
+          "notEnough": ["Consumir arte o series"],
+          "allowedInferences": ["Lo creativo aparece en lo que contaste"],
+          "forbiddenInferences": ["Sos artista", "Deberías estudiar arte"],
+          "exampleQuestions": ["Contame algo que hayas hecho vos, de cero, y que te haya gustado cómo quedó."]
+        },
+        {
+          "id": "N2.S",
+          "area": "S",
+          "label": "Social",
+          "plain": "Ayudar, enseñar, cuidar, acompañar",
+          "validEvidence": ["Explicar a compañeros, cuidar, voluntariado, que lo busquen para contar problemas"],
+          "notEnough": ["\"Me llevo bien con todos\""],
+          "allowedInferences": ["Ayudar o acompañar a otros aparece en lo que contaste"],
+          "forbiddenInferences": ["Sos una persona social", "Deberías trabajar con gente"],
+          "exampleQuestions": ["Contame si alguna vez ayudaste a alguien a entender algo o lo acompañaste en un momento difícil: ¿cómo fue?"]
+        },
+        {
+          "id": "N2.E",
+          "area": "E",
+          "label": "Emprendedor",
+          "plain": "Convencer, liderar, organizar a otros, vender, negociar",
+          "validEvidence": ["Organizar eventos, liderar grupos, vender algo, tomar la palabra"],
+          "notEnough": ["Querer ganar mucha plata"],
+          "allowedInferences": ["Organizar o convencer a otros aparece en lo que contaste"],
+          "forbiddenInferences": ["Sos líder", "Deberías emprender"],
+          "exampleQuestions": ["¿Alguna vez organizaste algo con otras personas, como un evento, una salida o una venta? Contame qué hiciste vos."]
+        },
+        {
+          "id": "N2.C",
+          "area": "C",
+          "label": "Convencional",
+          "plain": "Ordenar, registrar, seguir procedimientos",
+          "validEvidence": ["Llevar cuentas, organizar materiales, disfrutar planillas o listas"],
+          "notEnough": ["Ser prolijo en general"],
+          "allowedInferences": ["Ordenar y registrar aparece en lo que contaste"],
+          "forbiddenInferences": ["Sos una persona estructurada", "Deberías hacer trabajo de oficina"],
+          "exampleQuestions": ["¿Hay algo que te guste tener ordenado o registrado, como listas, cuentas o colecciones? Contame."]
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "name": "Intereses específicos",
+      "stage": "Lo concreto",
+      "framework": "Intereses básicos, CCT",
+      "exitCriteria": { "minSpecifics": 3, "requiresConfirmation": true, "maxTurns": 8 },
+      "indicators": [
+        {
+          "id": "N3.ACTIVIDAD",
+          "label": "Actividades concretas que disfruta",
+          "plain": "Episodios concretos: qué hacía, con quién, qué parte disfrutó",
+          "validEvidence": ["Episodios: qué hacía, con quién, qué parte disfrutó"],
+          "notEnough": ["Gustos generales sin episodio"],
+          "allowedInferences": ["En lo que contaste se repite X"],
+          "forbiddenInferences": ["Generalizar a un campo por un episodio"],
+          "exampleQuestions": ["Contame la última vez que hiciste algo que te gustó mucho: qué hacías, con quién y qué parte disfrutaste más."]
+        },
+        {
+          "id": "N3.TEMA",
+          "label": "Temas de curiosidad",
+          "plain": "Qué busca, mira o lee por su cuenta",
+          "validEvidence": ["Qué busca, mira o lee por su cuenta"],
+          "notEnough": ["Consumo pasivo sin interés por hacerlo"],
+          "allowedInferences": ["Registrar como interés"],
+          "forbiddenInferences": ["Confundir consumo con interés por hacerlo"],
+          "exampleQuestions": ["¿Sobre qué temas te ponés a buscar videos o leer por tu cuenta, sin que nadie te lo pida?"]
+        },
+        {
+          "id": "N3.ROL",
+          "label": "Rol preferido en grupo",
+          "plain": "Qué rol suele tomar en un grupo: organizar, investigar, presentar, diseñar, cuidar",
+          "validEvidence": ["Organizó, investigó, presentó, diseñó, cuidó al grupo"],
+          "notEnough": ["Una sola anécdota"],
+          "allowedInferences": ["Patrón si aparece en 2+ situaciones"],
+          "forbiddenInferences": ["Rol por una sola anécdota"],
+          "exampleQuestions": ["En los grupos en los que estuviste, ¿qué parte terminás haciendo vos casi siempre?"]
+        },
+        {
+          "id": "N3.FLOW",
+          "label": "Perder la noción del tiempo",
+          "plain": "Momentos de concentración intensa y disfrute",
+          "validEvidence": ["Relato de concentración intensa y disfrute"],
+          "notEnough": ["Mirar series sin parar"],
+          "allowedInferences": ["Indicador fuerte de interés"],
+          "forbiddenInferences": ["Que eso sea \"su vocación\""],
+          "exampleQuestions": ["¿Hay algo que cuando lo hacés se te pasan las horas sin darte cuenta? Contame la última vez."]
+        },
+        {
+          "id": "N3.RECHAZO",
+          "label": "Rechazos claros",
+          "plain": "Actividades que evita o le aburren aun pudiendo hacerlas",
+          "validEvidence": ["Actividades que evita o aburren aun pudiendo hacerlas"],
+          "notEnough": ["Algo que le salió mal una vez"],
+          "allowedInferences": ["Interés bajo"],
+          "forbiddenInferences": ["Incapacidad"],
+          "exampleQuestions": ["¿Y qué cosas te aburren o tratás de evitar, aunque puedas hacerlas?"]
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "name": "Moduladores",
+      "stage": "En paralelo",
+      "framework": "SCCT, valores de trabajo",
+      "parallel": true,
+      "indicators": [
+        {
+          "id": "N4.VALOR",
+          "label": "Valores de trabajo",
+          "plain": "Lo que no negociaría; elecciones que muestran prioridades",
+          "validEvidence": ["Lo que no negociaría; elecciones que muestran prioridades"],
+          "notEnough": ["Valores genéricos sin ejemplo"],
+          "allowedInferences": ["2 a 4 valores confirmados"],
+          "forbiddenInferences": ["Ordenarlos o juzgarlos"],
+          "exampleQuestions": ["Imaginate un día de trabajo o estudio que te deje conforme: ¿qué tendría que tener sí o sí?"]
+        },
+        {
+          "id": "N4.AUTOEF",
+          "label": "Autoeficacia percibida",
+          "plain": "Cuánto confía en sí para cada área (creencia, no capacidad)",
+          "perArea": true,
+          "validEvidence": ["\"No sirvo para…\", \"me sale bien…\", y episodios que lo apoyan o contradicen"],
+          "notEnough": ["Opinión de otros sobre su capacidad"],
+          "allowedInferences": ["Registrar la creencia y la evidencia"],
+          "forbiddenInferences": ["Tomarla como capacidad real", "Cerrar un área sin explorarla"],
+          "tactGuidance": "Validar la emoción, no la conclusión; buscar un episodio concreto.",
+          "exampleQuestions": ["Es bastante común sentir eso. ¿Hubo alguna vez algo de eso que te haya salido bien o te haya gustado aunque costara?"]
+        },
+        {
+          "id": "N4.EXPECT",
+          "label": "Expectativas de resultado",
+          "plain": "Qué espera que pase si elige algo",
+          "validEvidence": ["\"De eso no se vive\", \"ahí no hay trabajo\""],
+          "notEnough": ["Rumores sin creencia propia"],
+          "allowedInferences": ["Creencia a contrastar en la Parte 2"],
+          "forbiddenInferences": ["Confirmarla o desmentirla sin datos verificados"],
+          "tactGuidance": "No confirmar ni desmentir: anotarla como algo a averiguar con datos más adelante.",
+          "exampleQuestions": ["¿Qué te imaginás que pasaría si eligieras eso? Lo anoto para averiguarlo con datos más adelante."]
+        },
+        {
+          "id": "N4.APOYO",
+          "label": "Apoyos",
+          "plain": "Personas, recursos o condiciones que ayudan",
+          "validEvidence": ["Familia, economía, lugar, tiempo que ayudan"],
+          "notEnough": ["Suposiciones no dichas"],
+          "allowedInferences": ["Contexto que la Parte 2 debe respetar"],
+          "forbiddenInferences": ["Suponer recursos no dichos"],
+          "exampleQuestions": ["¿Quién o qué te da una mano cuando tenés que decidir algo importante?"]
+        },
+        {
+          "id": "N4.BARRERA",
+          "label": "Barreras",
+          "plain": "Condiciones que limitan: economía, lugar, tiempo, salud",
+          "validEvidence": ["Economía, lugar, tiempo, horarios, traslados"],
+          "notEnough": ["Suposiciones no dichas"],
+          "allowedInferences": ["Contexto que la Parte 2 debe respetar"],
+          "forbiddenInferences": ["Suponer limitaciones no dichas"],
+          "exampleQuestions": ["¿Hay algo práctico que tengas que tener en cuenta, como horarios, plata o dónde vivís?"]
+        },
+        {
+          "id": "N4.INFLUENCIA",
+          "label": "Influencia de otros",
+          "plain": "Diferencia entre \"me gusta\" y \"debería\"",
+          "validEvidence": ["Diferencia entre \"me gusta\" y \"debería\""],
+          "notEnough": ["Mencionar a otros sin diferencia"],
+          "allowedInferences": ["Marcar intereses que podrían ser ajenos, como pregunta"],
+          "forbiddenInferences": ["Decidir cuáles son \"auténticos\""],
+          "tactGuidance": "Neutral: explorar lo propio y lo esperado con el mismo peso.",
+          "exampleQuestions": ["Si no estuviera la expectativa de nadie, ¿hacia dónde mirarías?"]
+        }
+      ]
+    }
+  ],
+  "values": [
+    { "id": "logro", "label": "Ver resultados de lo que hago" },
+    { "id": "autonomia", "label": "Autonomía" },
+    { "id": "reconocimiento", "label": "Reconocimiento" },
+    { "id": "buen_ambiente", "label": "Buen ambiente con la gente" },
+    { "id": "ayudar", "label": "Ayudar a otros" },
+    { "id": "estabilidad", "label": "Estabilidad y seguridad" },
+    { "id": "ingresos", "label": "Ingresos" },
+    { "id": "creatividad", "label": "Creatividad" },
+    { "id": "equilibrio", "label": "Equilibrio con la vida personal" },
+    { "id": "aprendizaje", "label": "Aprendizaje constante" },
+    { "id": "variedad", "label": "Variedad" }
+  ],
+  "weights": { "confirmed": 3, "declaredConcrete": 2, "declared": 1, "hypothesis": 0, "againstFactor": 0.5 },
+  "display": {
+    "minEvidenceForPercentages": 6,
+    "minAreasForPercentages": 3,
+    "confidence": { "mediumFrom": 10, "highFrom": 16 },
+    "disclaimer": "Esto refleja lo que charlamos, no es un test. Puede cambiar si exploramos más."
+  },
+  "planner": { "flatRatio": 1.5, "n4EveryTurns": 4, "maxBeliefExamsInRow": 2, "maxDeepenTries": 2, "minValuesToClose": 2, "minSpecificsToClose": 3 },
+  "limits": { "offerCloseAtUserTurns": 30, "forceCloseAtUserTurns": 40 }
+}

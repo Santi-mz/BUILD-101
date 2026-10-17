@@ -1,3 +1,4 @@
+import { loadSession } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { synthesize } from "@/lib/tts";
 
@@ -5,11 +6,10 @@ export const maxDuration = 60;
 
 /** Texto a voz natural para las respuestas del agente. */
 export async function POST(req: Request) {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "No autorizado" }, { status: 401 });
+  // Vale una sesión de exploración activa (sin cuenta) o un usuario logueado.
+  const session = await loadSession();
+  const user = session ? null : (await (await supabaseServer()).auth.getUser()).data.user;
+  if (!session && !user) return Response.json({ error: "No autorizado" }, { status: 401 });
 
   const { text } = (await req.json()) as { text?: string };
   const clean = (text ?? "").replace(/[*_#`>]/g, "").trim().slice(0, 600);
