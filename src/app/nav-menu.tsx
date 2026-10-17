@@ -55,9 +55,11 @@ export function SiteNav({ signedIn }: { signedIn: boolean }) {
   if (!signedIn) {
     return (
       <div className="flex items-center gap-1">
-        <Link href="/#feed" className={TEXT_LINK}>Noticias</Link>
-        <Link href="/login" aria-current={current(pathname, "/login")} className={PILL_LINK}>
-          <span className={PILL}>Entrar</span>
+        <Link href="/#feed" className={`${TEXT_LINK} hidden sm:inline-flex`}>Noticias</Link>
+        <Link href="/resultado" aria-current={current(pathname, "/resultado")} className={`${TEXT_LINK} hidden sm:inline-flex`}>Mi devolución</Link>
+        <Link href="/login" aria-current={current(pathname, "/login")} className={TEXT_LINK}>Entrar</Link>
+        <Link href="/chat" aria-current={current(pathname, "/chat")} className={PILL_LINK}>
+          <span className={PILL}>Explorar</span>
         </Link>
       </div>
     );
@@ -67,10 +69,10 @@ export function SiteNav({ signedIn }: { signedIn: boolean }) {
     <div ref={root} className="flex items-center gap-1">
       <div className="hidden items-center gap-1 sm:flex">
         <Link href="/#feed" className={TEXT_LINK}>Noticias</Link>
-        <Link href="/perfil" aria-current={current(pathname, "/perfil")} className={TEXT_LINK}>Mi perfil</Link>
+        <Link href="/resultado" aria-current={current(pathname, "/resultado")} className={TEXT_LINK}>Mi devolución</Link>
       </div>
       <Link href="/chat" aria-current={current(pathname, "/chat")} className={`${PILL_LINK} ml-1`}>
-        <span className={PILL}>Chat</span>
+        <span className={PILL}>Explorar</span>
       </Link>
       <span aria-hidden className="mx-2 hidden h-5 w-px bg-border sm:block" />
       <form action="/auth/signout" method="post" className="hidden sm:block">
@@ -99,8 +101,8 @@ export function SiteNav({ signedIn }: { signedIn: boolean }) {
       >
         <ul className="space-y-1">
           <li><Link href="/#feed" onClick={close} className={MENU_ROW}>Noticias</Link></li>
-          <li><Link href="/perfil" onClick={close} aria-current={current(pathname, "/perfil")} className={MENU_ROW}>Mi perfil</Link></li>
-          <li><Link href="/chat" onClick={close} aria-current={current(pathname, "/chat")} className={MENU_ROW}>Chat</Link></li>
+          <li><Link href="/resultado" onClick={close} aria-current={current(pathname, "/resultado")} className={MENU_ROW}>Mi devolución</Link></li>
+          <li><Link href="/chat" onClick={close} aria-current={current(pathname, "/chat")} className={MENU_ROW}>Explorar</Link></li>
         </ul>
         <form action="/auth/signout" method="post" className="mt-2 border-t border-border pt-2">
           <button className={`${MENU_ROW} text-muted`}>Salir</button>

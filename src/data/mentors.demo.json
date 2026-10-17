@@ -1,0 +1,11 @@
+{
+  "note": "Directorio de DEMOSTRACIÓN. Perfiles ficticios, no contactables (verification_status demo, can_receive_question false). Ninguno es una persona real.",
+  "mentors": [
+    { "mentor_id": "mentor_demo_01", "public_alias": "Referente de prueba 1", "experience": "Perfil ficticio: estudió un campo relacionado con audio y producción", "tags": ["audio", "musica", "produccion", "sonido"], "riasec": ["A", "R"], "topics": ["cursada", "expectativas vs. realidad"], "verification_status": "demo", "active": true, "opt_in": true, "available": false },
+    { "mentor_id": "mentor_demo_02", "public_alias": "Referente de prueba 2", "experience": "Perfil ficticio: trabaja enseñando a adolescentes", "tags": ["ensenar", "ayudar", "personas"], "riasec": ["S"], "topics": ["un día típico", "qué le sorprendió"], "verification_status": "demo", "active": true, "opt_in": true, "available": false },
+    { "mentor_id": "mentor_demo_03", "public_alias": "Referente de prueba 3", "experience": "Perfil ficticio: estudió algo vinculado a datos e investigación", "tags": ["datos", "investigar", "ciencia"], "riasec": ["I", "C"], "topics": ["cómo es estudiar", "dificultades del primer año"], "verification_status": "demo", "active": true, "opt_in": true, "available": false },
+    { "mentor_id": "mentor_demo_04", "public_alias": "Referente de prueba 4", "experience": "Perfil ficticio: armó un emprendimiento propio", "tags": ["emprender", "vender", "organizar"], "riasec": ["E"], "topics": ["arrancar de cero", "equilibrio con otras cosas"], "verification_status": "demo", "active": true, "opt_in": true, "available": false },
+    { "mentor_id": "mentor_demo_05", "public_alias": "Referente de prueba 5", "experience": "Perfil ficticio: hizo una formación técnica de taller", "tags": ["arreglar", "taller", "herramientas", "construir"], "riasec": ["R"], "topics": ["práctica vs. teoría", "horarios"], "verification_status": "demo", "active": true, "opt_in": true, "available": false },
+    { "mentor_id": "mentor_demo_06", "public_alias": "Referente de prueba 6", "experience": "Perfil ficticio: estudió diseño e interacción", "tags": ["diseno", "dibujo", "crear", "video"], "riasec": ["A", "I"], "topics": ["portfolio", "expectativas vs. realidad"], "verification_status": "demo", "active": true, "opt_in": true, "available": false }
+  ]
+}
