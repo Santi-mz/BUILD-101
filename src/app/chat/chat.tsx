@@ -83,6 +83,33 @@ export default function Chat() {
     bottom.current?.scrollIntoView({ behavior: "smooth" });
   }, [lines, activity]);
 
+  // Importar datos de otras apps (CV / LinkedIn en PDF, GitHub): la IA los extrae y el agente los usa.
+  const importFrom = useCallback(
+    async (source: "cv" | "github", payload: File | string) => {
+      setBusy(true);
+      setChoices(null);
+      setActivity(source === "cv" ? "Leyendo tu CV" : "Revisando tu GitHub");
+      const form = new FormData();
+      form.set("source", source);
+      form.set(source === "cv" ? "file" : "username", payload);
+      const res = await fetch("/api/import", { method: "POST", body: form });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      setActivity(null);
+      setBusy(false);
+      if (!res.ok) {
+        setLines((l) => [...l, { role: "assistant", text: data.error ?? "No pude leer eso. Probá de nuevo." }]);
+        return;
+      }
+      setShowImport(false);
+      const what = source === "cv" ? "mi CV / LinkedIn" : "mi GitHub";
+      send({ message: `Te compartí ${what}. Usalo para ajustar mi perfil.` });
+    },
+    [send],
+  );
+  const [showImport, setShowImport] = useState(false);
+  const [github, setGithub] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
+
   const final = profile.status === "final";
   const pct = Math.round(profile.completeness * 100);
 
@@ -155,14 +182,62 @@ export default function Chat() {
               Enviar
             </button>
           </form>
-          {profile.questionCount >= 3 && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <button
               disabled={busy}
-              onClick={() => send({ message: "Quiero ver mis resultados ya.", wantsResults: true })}
-              className="text-sm text-muted underline-offset-4 hover:underline disabled:opacity-60"
+              onClick={() => setShowImport((v) => !v)}
+              className="text-accent underline-offset-4 hover:underline disabled:opacity-60"
             >
-              Mostrame mi perfil ahora
+              Sumar mi CV, LinkedIn o GitHub
             </button>
+            {profile.questionCount >= 3 && (
+              <button
+                disabled={busy}
+                onClick={() => send({ message: "Quiero ver mis resultados ya.", wantsResults: true })}
+                className="text-muted underline-offset-4 hover:underline disabled:opacity-60"
+              >
+                Mostrame mi perfil ahora
+              </button>
+            )}
+          </div>
+          {showImport && !busy && (
+            <div className="space-y-3 rounded-2xl border border-border bg-card p-4 text-sm">
+              <p className="text-muted">
+                Con tus datos el agente te conoce más rápido. Solo guardamos lo que extrae la IA, nunca el archivo.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) importFrom("cv", f);
+                    e.target.value = "";
+                  }}
+                />
+                <button onClick={() => fileInput.current?.click()} className="rounded-full border border-accent px-4 py-1.5 text-accent hover:bg-accent-soft">
+                  Subir CV o LinkedIn (PDF)
+                </button>
+                <span className="text-xs text-muted">En LinkedIn: tu perfil → Más → Guardar como PDF</span>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (github.trim()) importFrom("github", github.trim());
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  value={github}
+                  onChange={(e) => setGithub(e.target.value)}
+                  placeholder="Tu usuario de GitHub"
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-accent"
+                />
+                <button className="rounded-xl border border-accent px-4 text-accent hover:bg-accent-soft">Conectar</button>
+              </form>
+            </div>
           )}
         </div>
       )}

@@ -46,6 +46,7 @@ export const profileUpdateSchema = z.object({
 export type ProfileData = z.infer<typeof profileUpdateSchema> & {
   history?: string[][]; // top-3 RIASEC de cada actualización, para medir estabilidad
   recommendations?: Recommendation[];
+  imports?: { source: "cv" | "github"; summary: string; at: string }[]; // datos traídos de otras apps
 };
 
 export type Recommendation = {
