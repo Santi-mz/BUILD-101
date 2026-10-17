@@ -1,7 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { MODEL } from "@/lib/agent/run";
+import { MODEL, anthropicClient } from "@/lib/agent/run";
 import { NEWS_FEEDS, fetchFeed } from "@/lib/news-sources";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -35,7 +34,7 @@ export async function GET(req: Request) {
   if (fresh.length === 0) return Response.json({ inserted: 0 });
 
   // La IA resume, filtra y etiqueta cada noticia con pesos RIASEC: sin esto no hay feed personalizado.
-  const anthropic = new Anthropic();
+  const anthropic = anthropicClient();
   const res = await anthropic.messages.parse({
     model: MODEL,
     max_tokens: 16000,

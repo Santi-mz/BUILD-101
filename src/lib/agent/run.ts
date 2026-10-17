@@ -6,6 +6,9 @@ import { createRumboMcp } from "@/lib/mcp/server";
 import { SYSTEM_PROMPT } from "./prompt";
 
 export const MODEL = "claude-opus-5-5";
+
+// En Vercel la clave quedó cargada como "key"; se acepta ese nombre hasta renombrarla a ANTHROPIC_API_KEY.
+export const anthropicClient = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? process.env.key });
 const MAX_STEPS = 12;
 
 type Msg = Anthropic.Beta.BetaMessageParam;
@@ -71,7 +74,7 @@ export async function runAgent(opts: {
   emit: (e: AgentEvent) => void;
 }) {
   const { history, emit } = opts;
-  const anthropic = new Anthropic();
+  const anthropic = anthropicClient();
   const mcp = await connectMcp(opts.userId, opts.supabase);
 
   try {
