@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import CareerMap from "@/components/career-map";
@@ -6,7 +6,7 @@ import ComparePaths from "@/components/compare-paths";
 import SaveAccount from "@/components/save-account";
 import { getFeed, isFresh } from "@/lib/feed";
 import { getNode, matchProfile } from "@/lib/graph";
-import { RIASEC_KEYS, RIASEC_LABELS, topThree, type ProfileData, type RiasecKey } from "@/lib/profile";
+import { MAX_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, topThree, type ProfileData, type RiasecKey } from "@/lib/profile";
 import { supabaseServer } from "@/lib/supabase/server";
 
 const TYPE_LABEL = { carrera: "Carrera", curso: "Curso", pasantia: "Pasantía", empleo: "Empleo", beca: "Beca" };
@@ -21,6 +21,31 @@ const RIASEC_DESC: Record<RiasecKey, string> = {
   C: "Te sale el orden: organizar, planificar, llevar datos y seguir un buen método.",
 };
 
+// Mismo botón principal y mismos títulos de sección que la landing.
+const CTA_CLASS =
+  "inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-background shadow-sm transition hover:opacity-90";
+const SECONDARY_CLASS =
+  "inline-flex min-h-11 items-center rounded-full border border-border bg-card px-5 py-2.5 text-sm font-medium transition hover:border-accent";
+
+const EMPTY_POINTS = [
+  { title: "Tu código RIASEC", body: "Tus tres intereses más fuertes según el modelo de Holland, con el nivel de confianza de cada uno." },
+  { title: "Por qué ese perfil", body: "Las frases tuyas en las que se basa, junto a estudios de PubMed relacionados." },
+  { title: "Qué hacer después", body: "Carreras, cursos, pasantías y empleos reales en Uruguay, y un feed ordenado para vos." },
+];
+
+function SectionTitle({ eyebrow, title, action, children }: { eyebrow: string; title: string; action?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="max-w-2xl">
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-accent">{eyebrow}</p>
+        <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+        {children && <p className="mt-1.5 text-sm text-muted">{children}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
 async function PerfilInner() {
   const supabase = await supabaseServer();
   const {
@@ -32,13 +57,43 @@ async function PerfilInner() {
 
   if (!p?.riasec) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-24 text-center">
-        <p className="text-sm font-medium text-accent">Tu perfil vocacional</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Todavía no lo armamos</h1>
-        <p className="mt-3 text-muted">Son unos minutos de charla con el agente. Podés escribir, hablar o subir tu CV.</p>
-        <Link href="/chat" className="mt-8 inline-block rounded-full bg-accent px-7 py-3 font-medium text-background">
-          Empezar la charla
-        </Link>
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:py-20">
+        <div className="text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Tu perfil vocacional</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Todavía no lo armamos</h1>
+          <p className="mx-auto mt-3 max-w-xl text-muted">
+            Son unos minutos de charla con el agente: hasta {MAX_QUESTIONS} preguntas que se adaptan a lo que contás. Podés escribir, hablar o
+            subir tu CV.
+          </p>
+          <Link href="/chat" className={`${CTA_CLASS} mt-7 text-base`}>
+            Empezar mi orientación <span aria-hidden>→</span>
+          </Link>
+        </div>
+
+        <h2 className="mt-12 text-center text-sm font-semibold uppercase tracking-widest text-muted">Qué vas a descubrir</h2>
+        <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+          {EMPTY_POINTS.map((pt, i) => (
+            <li key={pt.title} className="rounded-2xl border border-border bg-card p-5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-soft font-mono text-sm font-semibold text-accent">
+                {i + 1}
+              </span>
+              <h3 className="mt-3 font-semibold">{pt.title}</h3>
+              <p className="mt-1 text-sm text-muted">{pt.body}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+          <p className="text-sm font-medium">Los seis intereses que mide</p>
+          <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {RIASEC_KEYS.map((k) => (
+              <li key={k} className="rounded-lg bg-accent-soft px-1 py-2 text-center">
+                <div className="font-mono text-base font-semibold text-accent">{k}</div>
+                <div className="truncate text-[11px] text-muted">{RIASEC_LABELS[k]}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     );
   }
@@ -55,7 +110,7 @@ async function PerfilInner() {
   const { items: news } = await getFeed(supabase, p, 4);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 py-10 sm:py-14">
+    <div className="mx-auto max-w-4xl space-y-12 px-4 py-10 sm:space-y-16 sm:py-14">
       {user.is_anonymous && (
         <section className="rounded-3xl border border-accent/40 bg-accent-soft/50 p-5">
           <SaveAccount />
@@ -63,28 +118,65 @@ async function PerfilInner() {
       )}
 
       {/* Encabezado: código RIASEC */}
-      <section className="overflow-hidden rounded-3xl border border-border bg-card">
+      <section className="relative isolate overflow-hidden rounded-3xl border border-border bg-card">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full bg-accent-soft opacity-70 blur-3xl" />
         <div className="p-6 sm:p-8">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className={`rounded-full px-2.5 py-1 font-medium ${final ? "bg-accent text-background" : "bg-accent-soft text-accent"}`}>
-              {final ? "Perfil completo" : `En construcción · ${row?.question_count ?? 0} respuestas`}
+              {final ? "Perfil completo" : "En construcción"}
             </span>
             <span className="text-muted">Modelo RIASEC de Holland</span>
           </div>
-          <div className="mt-5 flex flex-wrap items-end gap-3">
-            {top.map((k, i) => (
-              <div key={k} className={`rounded-2xl border border-border px-4 py-3 ${i === 0 ? "bg-accent text-background" : "bg-background"}`}>
-                <div className="font-mono text-3xl font-semibold leading-none">{k}</div>
-                <div className={`mt-1 text-xs ${i === 0 ? "text-background/80" : "text-muted"}`}>{RIASEC_LABELS[k]}</div>
-              </div>
-            ))}
+
+          <div className="mt-6 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
+            <div>
+              <h1 className="text-xs font-semibold uppercase tracking-widest text-muted">Tu código RIASEC</h1>
+              <p className="mt-2 font-mono text-6xl font-semibold leading-none tracking-tight text-accent sm:text-7xl">
+                <span aria-hidden>{top.join("")}</span>
+                <span className="sr-only">{top.map((k) => RIASEC_LABELS[k]).join(", ")}</span>
+              </p>
+            </div>
+            <div>
+              <ol className="space-y-2">
+                {top.map((k, i) => (
+                  <li key={k} className="flex items-center gap-3">
+                    <span
+                      aria-hidden
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono font-semibold ${i === 0 ? "bg-accent text-background" : "bg-accent-soft text-accent"}`}
+                    >
+                      {k}
+                    </span>
+                    <span className="text-sm">
+                      <span className="font-medium">{RIASEC_LABELS[k]}</span>
+                      <span className="text-muted"> · {i === 0 ? "tu interés principal" : `${i + 1}.º interés`}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-3 text-xs text-muted">Las tres letras son tus intereses más fuertes, de mayor a menor.</p>
+            </div>
           </div>
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed">{p.summary}</p>
+
+          <p className="mt-6 max-w-2xl border-t border-border pt-6 text-lg leading-relaxed">{p.summary}</p>
+
+          {!final && (
+            <div className="mt-6 flex gap-3 rounded-2xl border border-accent/30 bg-accent-soft/60 p-4 text-sm">
+              <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent motion-safe:animate-pulse" />
+              <div>
+                <p className="font-medium">Tu perfil todavía se está armando</p>
+                <p className="mt-0.5 text-muted">
+                  Llevás {row?.question_count ?? 0} {row?.question_count === 1 ? "respuesta" : "respuestas"} de hasta {MAX_QUESTIONS}. Seguí la
+                  charla para que el agente confirme tus intereses: estos resultados todavía pueden cambiar.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/chat" className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-background">
-              {final ? "Seguir charlando" : "Terminar mi perfil"}
+            <Link href="/chat" className={CTA_CLASS}>
+              {final ? "Seguir charlando" : "Terminar mi perfil"} <span aria-hidden>→</span>
             </Link>
-            <Link href="/#feed" className="rounded-full border border-border px-5 py-2.5 text-sm font-medium">
+            <Link href="/#feed" className={SECONDARY_CLASS}>
               Ver mi feed
             </Link>
           </div>
@@ -93,8 +185,9 @@ async function PerfilInner() {
 
       {/* Por qué: tipos principales con frases del usuario y evidencia */}
       <section>
-        <h2 className="mb-1 text-xl font-semibold">Por qué este perfil</h2>
-        <p className="mb-4 text-sm text-muted">Cada tipo sale de cosas que dijiste, y el agente lo contrastó con estudios científicos.</p>
+        <SectionTitle eyebrow="Fundamentos" title="Por qué este perfil">
+          Cada tipo sale de cosas que dijiste, y el agente lo contrastó con estudios científicos.
+        </SectionTitle>
         <div className="grid gap-4 md:grid-cols-3">
           {top.map((k) => {
             const reasons = (p.reasons ?? []).filter((r) => r.type === k).slice(0, 2);
@@ -120,45 +213,48 @@ async function PerfilInner() {
       </section>
 
       {/* Los seis intereses */}
-      <section className="rounded-3xl border border-border bg-card p-6">
-        <h2 className="font-semibold">Tus seis intereses</h2>
-        <p className="mt-1 text-xs text-muted">La barra clara es el margen de duda: se achica a medida que el agente confirma cada interés.</p>
-        <div className="mt-5 space-y-3">
-          {RIASEC_KEYS.map((k) => {
-            const s = p.riasec[k].score;
-            const doubt = (1 - p.riasec[k].confidence) * 0.3;
-            return (
-              <div key={k} className="grid grid-cols-[120px_1fr_44px] items-center gap-3 text-sm">
-                <span className={top.includes(k) ? "font-medium" : "text-muted"}>{RIASEC_LABELS[k]}</span>
-                <div className="relative h-3 overflow-hidden rounded-full bg-accent-soft">
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-accent/25" style={{ width: `${Math.min(100, (s + doubt) * 100)}%` }} />
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${s * 100}%` }} />
+      <section>
+        <SectionTitle eyebrow="Mapa de intereses" title="Tus seis intereses">
+          La barra clara es el margen de duda: se achica a medida que el agente confirma cada interés.
+        </SectionTitle>
+        <div className="rounded-3xl border border-border bg-card p-6">
+          <div className="space-y-3">
+            {RIASEC_KEYS.map((k) => {
+              const s = p.riasec[k].score;
+              const doubt = (1 - p.riasec[k].confidence) * 0.3;
+              return (
+                <div key={k} className="grid grid-cols-[120px_1fr_44px] items-center gap-3 text-sm">
+                  <span className={top.includes(k) ? "font-medium" : "text-muted"}>{RIASEC_LABELS[k]}</span>
+                  <div className="relative h-3 overflow-hidden rounded-full bg-accent-soft">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-accent/25" style={{ width: `${Math.min(100, (s + doubt) * 100)}%` }} />
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${s * 100}%` }} />
+                  </div>
+                  <span className="text-right font-mono text-xs text-muted">{Math.round(s * 100)}</span>
                 </div>
-                <span className="text-right font-mono text-xs text-muted">{Math.round(s * 100)}</span>
-              </div>
-            );
-          })}
-        </div>
-        {(p.strengths.length > 0 || p.values.length > 0) && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            {p.strengths.map((s) => (
-              <span key={s} className="rounded-full bg-accent-soft px-3 py-1 text-xs text-accent">
-                {s}
-              </span>
-            ))}
-            {p.values.map((s) => (
-              <span key={s} className="rounded-full border border-border px-3 py-1 text-xs text-muted">
-                {s}
-              </span>
-            ))}
+              );
+            })}
           </div>
-        )}
+          {(p.strengths.length > 0 || p.values.length > 0) && (
+            <div className="mt-6 flex flex-wrap gap-2">
+              {p.strengths.map((s) => (
+                <span key={s} className="rounded-full bg-accent-soft px-3 py-1 text-xs text-accent">
+                  {s}
+                </span>
+              ))}
+              {p.values.map((s) => (
+                <span key={s} className="rounded-full border border-border px-3 py-1 text-xs text-muted">
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Recomendaciones */}
       {p.recommendations && p.recommendations.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Tus recomendaciones</h2>
+          <SectionTitle eyebrow="Próximos pasos" title="Tus recomendaciones" />
           <div className="grid gap-4 sm:grid-cols-2">
             {p.recommendations.map((r) => (
               <a
@@ -185,15 +281,17 @@ async function PerfilInner() {
       {/* Oportunidades del feed */}
       {news.length > 0 && (
         <section>
-          <div className="mb-4 flex items-end justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Oportunidades para vos</h2>
-              <p className="text-sm text-muted">Noticias reales de esta semana, ordenadas por afinidad con tu perfil.</p>
-            </div>
-            <Link href="/#feed" className="text-sm font-medium text-accent">
-              Ver todas →
-            </Link>
-          </div>
+          <SectionTitle
+            eyebrow="Feed"
+            title="Oportunidades para vos"
+            action={
+              <Link href="/#feed" className="inline-flex min-h-11 items-center text-sm font-medium text-accent">
+                Ver todas <span aria-hidden>&nbsp;→</span>
+              </Link>
+            }
+          >
+            Noticias reales de esta semana, ordenadas por afinidad con tu perfil.
+          </SectionTitle>
           <div className="grid gap-3 sm:grid-cols-2">
             {news.map((n) => (
               <a key={n.id} href={n.url} target="_blank" rel="noreferrer" className="rounded-2xl border border-border bg-card p-4 transition hover:border-accent">
@@ -212,7 +310,9 @@ async function PerfilInner() {
       {/* Evidencia */}
       {p.evidence.length > 0 && (
         <section>
-          <h2 className="mb-4 text-xl font-semibold">Evidencia científica</h2>
+          <SectionTitle eyebrow="Ciencia" title="Evidencia científica">
+            Estudios de PubMed que el agente consultó. Describen patrones generales, no validan tu perfil individual.
+          </SectionTitle>
           <ul className="space-y-3 text-sm">
             {p.evidence.map((e) => (
               <li key={e.pmid} className="rounded-2xl border border-border bg-card p-4">
