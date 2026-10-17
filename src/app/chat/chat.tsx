@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import LiveVoice from "@/components/live-voice";
 import SaveAccount from "@/components/save-account";
 import { MIN_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, type ProfileSnapshot } from "@/lib/profile";
 import { speak, startDictation, stopSpeaking, toWav16k } from "@/lib/voice";
@@ -23,6 +24,7 @@ export default function Chat() {
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
   const [showPanel, setShowPanel] = useState(false);
+  const [live, setLive] = useState(false);
   const started = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
   const logId = useRef(0);
@@ -273,6 +275,19 @@ export default function Chat() {
     </div>
   );
 
+  const closeLive = () => {
+    setLive(false);
+    fetch("/api/chat")
+      .then((r) => r.json())
+      .then((data) => {
+        setProfile(data.profile);
+        if (data.messages.length) {
+          setLines(data.messages);
+          setChoices(data.choices);
+        }
+      });
+  };
+
   return (
     // Fijo debajo del header (57 px): el chat ocupa toda la pantalla y no compite con el scroll de la página.
     <div className="fixed inset-x-0 bottom-0 top-[57px] z-0 bg-background">
@@ -391,6 +406,17 @@ export default function Chat() {
                     </svg>
                   </button>
                 </div>
+                <button
+                  onClick={() => {
+                    stopSpeaking();
+                    setLive(true);
+                  }}
+                  disabled={busy || recording}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-accent/40 bg-accent-soft/60 py-2.5 text-sm font-medium text-accent transition hover:bg-accent-soft disabled:opacity-50"
+                >
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+                  Hablar en vivo con Rumbo
+                </button>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
                   <button onClick={toggleVoice} aria-pressed={voiceReplies} className={voiceReplies ? "font-medium text-accent" : "hover:text-foreground"}>
                     {voiceReplies ? "Respuestas en voz: activadas" : "Escuchar respuestas en voz"}
@@ -446,6 +472,7 @@ export default function Chat() {
           )}
         </div>
 
+        {live && <LiveVoice onClose={closeLive} />}
         <aside className="hidden min-h-0 overflow-y-auto py-6 lg:block">
           <div className="rounded-3xl border border-border bg-card p-5">{panel}</div>
         </aside>

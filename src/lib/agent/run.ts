@@ -49,7 +49,7 @@ const TOOL_LABELS: Record<string, string> = {
 };
 
 // Herramientas locales (no MCP).
-const LOCAL_TOOLS: FunctionDeclaration[] = [
+export const LOCAL_TOOLS: FunctionDeclaration[] = [
   {
     name: "offer_choices",
     description:
@@ -76,7 +76,7 @@ const LOCAL_TOOLS: FunctionDeclaration[] = [
 ];
 
 /** Búsqueda web con grounding de Google en una llamada aparte (no se mezcla con las funciones). */
-async function webSearch(ai: GoogleGenAI, query: string) {
+export async function webSearch(ai: GoogleGenAI, query: string) {
   const res = await withRetry((model) => ai.models.generateContent({
     model,
     contents: `Buscá y resumí en viñetas opciones concretas y vigentes para: ${query}. Incluí nombre de la institución y la URL de cada una.`,
@@ -90,7 +90,7 @@ async function webSearch(ai: GoogleGenAI, query: string) {
 }
 
 /** Conecta un cliente MCP en memoria al servidor MCP de Rumbo (mismo protocolo que el endpoint /api/mcp). */
-async function connectMcp(userId: string, supabase: SupabaseClient, trail?: string[]) {
+export async function connectMcp(userId: string, supabase: SupabaseClient, trail?: string[]) {
   const server = createRumboMcp({ userId, supabase, trail });
   const [clientT, serverT] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "rumbo-agent", version: "0.1.0" });
