@@ -76,7 +76,7 @@ export type Recommendation = {
 // Condición de parada
 export const CONFIDENCE_THRESHOLD = 0.75;
 export const STABLE_ROUNDS = 2;
-export const MAX_QUESTIONS = 14;
+export const MAX_QUESTIONS = 10;
 export const MIN_QUESTIONS = 5; // no cerrar por confianza antes de esto: el perfil queda flojo
 
 export function topThree(p: Pick<ProfileData, "riasec">): RiasecKey[] {

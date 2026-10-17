@@ -7,7 +7,15 @@ import SaveAccount from "@/components/save-account";
 import { MIN_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, type ProfileSnapshot } from "@/lib/profile";
 import { speak, startDictation, stopSpeaking, toWav16k } from "@/lib/voice";
 
-type Line = { role: "user" | "assistant"; text: string };
+type Line = { role: "user" | "assistant" | "insight"; text: string; title?: string; kind?: string };
+
+// Tarjetas de razonamiento del agente: qué dedujo, qué descartó, caminos concretos y evidencia.
+const INSIGHT_LABEL: Record<string, string> = {
+  inferencia: "Lo que veo",
+  descarte: "Lo que descarto",
+  camino: "Un camino posible",
+  evidencia: "Lo que dice la ciencia",
+};
 type Choices = { question: string; options: string[] } | null;
 type LogItem = { id: number; label: string };
 
@@ -76,6 +84,14 @@ export default function Chat() {
         } else if (e.type === "tool") {
           setActivity(e.label);
           note(e.label);
+        } else if (e.type === "insight") {
+          setActivity(null);
+          // La tarjeta va antes del mensaje que el agente está escribiendo.
+          setLines((l) => {
+            const last = l[l.length - 1];
+            const card: Line = { role: "insight", text: e.body, title: e.title, kind: e.kind };
+            return last?.role === "assistant" && !last.text ? [...l.slice(0, -1), card, last] : [...l, card];
+          });
         } else if (e.type === "choices") {
           reply += `\n${e.question}`;
           setChoices({ question: e.question, options: e.options });
@@ -315,7 +331,13 @@ export default function Chat() {
                 </div>
               )}
               {lines.map((l, i) =>
-                l.role === "user" ? (
+                l.role === "insight" ? (
+                  <div key={i} className="ml-12 rounded-2xl border border-accent/30 bg-accent-soft/50 px-4 py-3">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-accent">{INSIGHT_LABEL[l.kind ?? ""] ?? "Lo que veo"}</p>
+                    <p className="mt-1 font-medium leading-snug">{l.title}</p>
+                    <p className="mt-1 text-sm text-muted">{l.text}</p>
+                  </div>
+                ) : l.role === "user" ? (
                   <div key={i} className="flex justify-end">
                     <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-[15px] leading-relaxed text-background">{l.text}</div>
                   </div>

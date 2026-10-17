@@ -40,10 +40,13 @@ export async function withRetry<T>(fn: (model: string) => Promise<T>): Promise<T
   throw last;
 }
 
+export type InsightKind = "inferencia" | "descarte" | "camino" | "evidencia";
+
 export type AgentEvent =
   | { type: "text"; delta: string }
   | { type: "tool"; name: string; label: string }
   | { type: "choices"; question: string; options: string[] }
+  | { type: "insight"; kind: InsightKind; title: string; body: string }
   | { type: "error"; message: string };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -60,6 +63,20 @@ const TOOL_LABELS: Record<string, string> = {
 
 // Herramientas locales (no MCP).
 export const LOCAL_TOOLS: FunctionDeclaration[] = [
+  {
+    name: "share_insight",
+    description:
+      "Muestra al usuario una tarjeta con lo que acabás de entender o descubrir: una inferencia sobre su perfil, una hipótesis que descartás, un camino concreto (ocupaciones del grafo con % de afinidad) o un hallazgo científico en lenguaje simple. Usalo en cada turno, antes de offer_choices.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["inferencia", "descarte", "camino", "evidencia"] },
+        title: { type: "string", description: "Titular corto, 3 a 8 palabras (ej: 'Lo tuyo es entender cómo funcionan las cosas')" },
+        body: { type: "string", description: "1 o 2 frases conectadas con lo que dijo la persona" },
+      },
+      required: ["kind", "title", "body"],
+    },
+  },
   {
     name: "offer_choices",
     description:
@@ -174,6 +191,10 @@ export async function runAgent(opts: {
           const args = (call.args ?? {}) as Record<string, unknown>;
           const reply = (response: Record<string, unknown>): Part => ({ functionResponse: { id: call.id, name, response } });
 
+          if (name === "share_insight") {
+            emit({ type: "insight", kind: (args.kind as InsightKind) ?? "inferencia", title: String(args.title ?? ""), body: String(args.body ?? "") });
+            return reply({ result: "Mostrado." });
+          }
           if (name === "offer_choices") {
             emit({ type: "choices", question: String(args.question ?? ""), options: (args.options as string[]) ?? [] });
             endTurn = true;

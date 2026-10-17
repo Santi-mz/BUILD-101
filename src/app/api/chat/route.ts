@@ -93,7 +93,7 @@ export async function GET() {
     supabase.from("conversations").select("messages").eq("user_id", user.id).maybeSingle(),
     supabase.from("profiles").select("data,status,question_count").eq("user_id", user.id).maybeSingle(),
   ]);
-  const visible: { role: "user" | "assistant"; text: string }[] = [];
+  const visible: { role: "user" | "assistant" | "insight"; text: string; title?: string; kind?: string }[] = [];
   let lastChoices: { question: string; options: string[] } | null = null;
   for (const m of ((conv?.messages as Msg[]) ?? []).slice(1)) {
     for (const part of m.parts ?? []) {
@@ -105,6 +105,10 @@ export async function GET() {
       if (part.text && !part.thought && !part.text.startsWith("[Mensaje del sistema")) {
         if (m.role === "user") lastChoices = null;
         visible.push({ role: m.role === "model" ? "assistant" : "user", text: part.text });
+      }
+      if (part.functionCall?.name === "share_insight") {
+        const a = part.functionCall.args as { kind?: string; title?: string; body?: string };
+        visible.push({ role: "insight", text: a.body ?? "", title: a.title ?? "", kind: a.kind ?? "inferencia" });
       }
       if (part.functionCall?.name === "offer_choices") {
         lastChoices = part.functionCall.args as { question: string; options: string[] };
