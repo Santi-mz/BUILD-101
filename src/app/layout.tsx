@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase/server";
+import { NavFallback, SiteNav } from "./nav-menu";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -18,17 +19,7 @@ async function NavLinks() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user ? (
-    <>
-      <Link href="/perfil" className="text-muted hover:text-foreground">Mi perfil</Link>
-      <Link href="/chat" className="rounded-full bg-accent px-4 py-1.5 font-medium text-background">Chat</Link>
-      <form action="/auth/signout" method="post">
-        <button className="text-muted hover:text-foreground">Salir</button>
-      </form>
-    </>
-  ) : (
-    <Link href="/login" className="rounded-full bg-accent px-4 py-1.5 font-medium text-background">Entrar</Link>
-  );
+  return <SiteNav signedIn={!!user} />;
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -36,14 +27,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
-          <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
+          {/* 56 px + 1 px de borde = 57 px: chat.tsx calcula su alto con ese valor. */}
+          <nav aria-label="Principal" className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
+            <Link
+              href="/"
+              className="-ml-2 inline-flex h-11 items-center rounded-full px-2 text-lg font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
               Rumbo<span className="text-accent">.</span>
             </Link>
-            <div className="flex items-center gap-4 text-sm">
-              <Link href="/#feed" className="text-muted hover:text-foreground">Noticias</Link>
-              <Suspense><NavLinks /></Suspense>
-            </div>
+            <Suspense fallback={<NavFallback />}>
+              <NavLinks />
+            </Suspense>
           </nav>
         </header>
         <main className="flex-1">{children}</main>
