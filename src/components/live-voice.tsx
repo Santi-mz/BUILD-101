@@ -60,6 +60,18 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
     let nextTime = 0;
     const playing = new Set<AudioBufferSourceNode>();
 
+    // Lo dicho en el turno actual: se guarda en la charla cuando el turno termina.
+    const pending = { user: "", agent: "" };
+    const flush = () => {
+      const turns = [
+        { role: "user", text: pending.user },
+        { role: "agent", text: pending.agent },
+      ].filter((t) => t.text.trim());
+      pending.user = "";
+      pending.agent = "";
+      if (turns.length)
+        fetch("/api/live/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turns }), keepalive: true }).catch(() => {});
+    };
     const add = (role: Turn["role"], text: string) =>
       setTurns((t) => {
         const last = t[t.length - 1];
@@ -100,8 +112,15 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
       const sc = m.serverContent;
       if (sc?.interrupted) stopPlayback();
       for (const p of sc?.modelTurn?.parts ?? []) if (p.inlineData?.data) play(p.inlineData.data);
-      if (sc?.inputTranscription?.text) add("user", sc.inputTranscription.text);
-      if (sc?.outputTranscription?.text) add("agent", sc.outputTranscription.text);
+      if (sc?.inputTranscription?.text) {
+        add("user", sc.inputTranscription.text);
+        pending.user += sc.inputTranscription.text;
+      }
+      if (sc?.outputTranscription?.text) {
+        add("agent", sc.outputTranscription.text);
+        pending.agent += sc.outputTranscription.text;
+      }
+      if (sc?.turnComplete || sc?.interrupted) flush();
       if (m.toolCall?.functionCalls?.length) {
         setStatus("pensando");
         const responses = await Promise.all(
@@ -167,6 +186,7 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
     })();
 
     cleanup.current = () => {
+      flush();
       cancelled = true;
       session?.close();
       stream?.getTracks().forEach((t) => t.stop());

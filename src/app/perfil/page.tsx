@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import CareerMap from "@/components/career-map";
 import ComparePaths from "@/components/compare-paths";
+import OpportunitiesPanel from "@/components/opportunities-panel";
 import SaveAccount from "@/components/save-account";
 import { getFeed, isFresh } from "@/lib/feed";
 import { getNode, matchProfile } from "@/lib/graph";
@@ -273,6 +274,8 @@ async function PerfilInner() {
           </div>
         </section>
       )}
+
+      <OpportunitiesPanel initial={p.opportunities ?? []} />
 
       {p.graph_trail && p.graph_trail.length > 0 && <CareerMap ids={p.graph_trail} />}
 
