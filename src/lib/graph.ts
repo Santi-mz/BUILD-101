@@ -105,3 +105,28 @@ export function subgraph(ids: string[]) {
   const edges = graph.edges.filter((e) => set.has(e.from) && set.has(e.to));
   return { nodes, edges };
 }
+
+/** % de afinidad entre un perfil RIASEC y una ocupación (similitud coseno). */
+export function affinity(profile: Record<string, number>, id: string) {
+  const n = byId.get(id);
+  if (!n?.riasec) return 0;
+  const p = RIASEC_KEYS.map((k) => profile[k] ?? 0);
+  const o = RIASEC_KEYS.map((k) => n.riasec![k] ?? 0);
+  return Math.round((o.reduce((a, v, i) => a + v * p[i], 0) / ((Math.hypot(...p) || 1) * (Math.hypot(...o) || 1))) * 100);
+}
+
+/** Datos de una ocupación para compararla: preparación, qué estudiar, habilidades y ocupaciones vecinas. */
+export function occupationFacts(id: string) {
+  const n = byId.get(id);
+  if (!n || n.kind !== "occupation") return null;
+  return {
+    id,
+    name: n.name,
+    en: n.en,
+    description: n.description,
+    preparation: n.zone ? ZONE_LABELS[n.zone] : "sin dato",
+    study: neighbors(id, "knowledge", 6).map((x) => x.node.name),
+    skills: neighbors(id, "skill", 6).map((x) => x.node.name),
+    related: neighbors(id, "related", 4).map((x) => x.node.name),
+  };
+}

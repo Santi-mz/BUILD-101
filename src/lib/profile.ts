@@ -41,6 +41,20 @@ export const profileUpdateSchema = z.object({
     .array(z.object({ pmid: z.string(), title: z.string(), claim: z.string() }))
     .describe("Papers de PubMed que respaldan los rasgos inferidos"),
   summary: z.string().describe("Resumen breve del perfil en segunda persona"),
+  reasons: z
+    .array(
+      z.object({
+        type: z.enum(["R", "I", "A", "S", "E", "C"]),
+        quote: z.string().describe("Frase TEXTUAL del usuario (copiada de lo que dijo), corta"),
+        why: z.string().describe("Por qué esa frase indica ese tipo, en una línea"),
+      }),
+    )
+    .optional()
+    .describe("Frases del usuario que justifican los tipos principales (1 o 2 por tipo del top 3)"),
+  covered: z
+    .array(z.string())
+    .optional()
+    .describe("Temas o situaciones que ya preguntaste (ej: 'sábado libre', 'materias favoritas'), para no repetirlos"),
 });
 
 export type ProfileData = z.infer<typeof profileUpdateSchema> & {
@@ -86,6 +100,20 @@ export function shouldStop(p: ProfileData | null, questionCount: number): StopRe
     h.slice(-STABLE_ROUNDS).every((t) => t.join("") === h[h.length - 1].join(""));
   return confident && stable ? "confidence" : null;
 }
+
+/** Lo que la interfaz necesita para mostrar el perfil en vivo. */
+export function profileSnapshot(p: ProfileData | null, status: string | undefined, questionCount: number) {
+  return {
+    status: status ?? "in_progress",
+    questionCount,
+    completeness: status === "final" ? 1 : completeness(p),
+    code: riasecCode(p),
+    riasec: p?.riasec ?? null,
+    evidence: p?.evidence?.length ?? 0,
+    strengths: (p?.strengths ?? []).slice(0, 4),
+  };
+}
+export type ProfileSnapshot = ReturnType<typeof profileSnapshot>;
 
 export function riasecCode(p: ProfileData | null): string {
   return p?.riasec ? topThree(p).join("") : "";

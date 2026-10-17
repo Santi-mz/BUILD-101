@@ -45,3 +45,6 @@ export async function getFeed(supabase: SupabaseClient, profile: ProfileData | n
   scored.sort((a, b) => b.score - a.score);
   return { items: scored.slice(0, limit).map((s) => s.item), personalized };
 }
+
+/** Noticia publicada en los últimos 3 días. */
+export const isFresh = (publishedAt: string | null) => Boolean(publishedAt && Date.now() - new Date(publishedAt).getTime() < 3 * 86_400_000);
