@@ -58,6 +58,7 @@ async function runPersona(p: (typeof PERSONAS)[number], real: SupabaseClient) {
   mem.set({ data: {} as ProfileData, status: "in_progress", question_count: 0 });
   const history: Content[] = [{ role: "user", parts: [{ text: "Hola, quiero empezar mi orientación vocacional." }] }];
   const tools: Record<string, number> = {};
+  const trail: string[] = [];
   const errors: string[] = [];
 
   for (let turn = 0; turn <= MAX_TURNS; turn++) {
@@ -72,7 +73,7 @@ async function runPersona(p: (typeof PERSONAS)[number], real: SupabaseClient) {
       if (e.type === "tool") tools[e.name] = (tools[e.name] ?? 0) + 1;
       if (e.type === "error") errors.push(e.message);
     };
-    await runAgent({ history, userId: "eval", supabase: mem.client, emit });
+    await runAgent({ history, userId: "eval", supabase: mem.client, emit, trail });
     const row = mem.get()!;
     if (row.status === "final") break;
 
@@ -101,6 +102,7 @@ async function runPersona(p: (typeof PERSONAS)[number], real: SupabaseClient) {
     evidence: row.data?.evidence?.length ?? 0,
     recs: recs.length,
     recsWithUrl: recs.filter((r) => r.url?.startsWith("http")).length,
+    graphNodes: new Set(trail).size,
     tools,
     errors,
   };

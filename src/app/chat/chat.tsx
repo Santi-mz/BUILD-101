@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MIN_QUESTIONS } from "@/lib/profile";
 
 type Line = { role: "user" | "assistant"; text: string };
 type Choices = { question: string; options: string[] } | null;
@@ -190,7 +191,7 @@ export default function Chat() {
             >
               Sumar mi CV, LinkedIn o GitHub
             </button>
-            {profile.questionCount >= 3 && (
+            {profile.questionCount >= MIN_QUESTIONS && (
               <button
                 disabled={busy}
                 onClick={() => send({ message: "Quiero ver mis resultados ya.", wantsResults: true })}

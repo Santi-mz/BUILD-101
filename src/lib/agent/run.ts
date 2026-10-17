@@ -43,6 +43,9 @@ const TOOL_LABELS: Record<string, string> = {
   finalize_profile: "Armando tus recomendaciones",
   search_news: "Buscando noticias",
   web_search: "Buscando opciones reales en la web",
+  graph_match_profile: "Recorriendo el grafo de carreras",
+  graph_explore: "Navegando ocupaciones relacionadas",
+  graph_search: "Buscando en el grafo de carreras",
 };
 
 // Herramientas locales (no MCP).
@@ -87,8 +90,8 @@ async function webSearch(ai: GoogleGenAI, query: string) {
 }
 
 /** Conecta un cliente MCP en memoria al servidor MCP de Rumbo (mismo protocolo que el endpoint /api/mcp). */
-async function connectMcp(userId: string, supabase: SupabaseClient) {
-  const server = createRumboMcp({ userId, supabase });
+async function connectMcp(userId: string, supabase: SupabaseClient, trail?: string[]) {
+  const server = createRumboMcp({ userId, supabase, trail });
   const [clientT, serverT] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "rumbo-agent", version: "0.1.0" });
   await Promise.all([server.connect(serverT), client.connect(clientT)]);
@@ -110,10 +113,12 @@ export async function runAgent(opts: {
   userId: string;
   supabase: SupabaseClient;
   emit: (e: AgentEvent) => void;
+  /** Se llena con los nodos del grafo de carreras que el agente visitó. */
+  trail?: string[];
 }) {
   const { history, emit } = opts;
   const ai = genai();
-  const mcp = await connectMcp(opts.userId, opts.supabase);
+  const mcp = await connectMcp(opts.userId, opts.supabase, opts.trail);
 
   try {
     for (let step = 0; step < MAX_STEPS; step++) {

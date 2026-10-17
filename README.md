@@ -28,3 +28,13 @@ Ramas por tarea y PR a `main`; solo martotrigo mergea. Áreas, dueños y reglas 
 - `src/app/api/chat/route.ts`: condición de parada (confianza ≥ 0.75 en las 6 dimensiones + top 3 estable 2 rondas, máximo 14 preguntas, o pedido del usuario).
 - `src/app/api/cron/news/route.ts`: ingesta diaria + resumen y etiquetado RIASEC con Gemini.
 - `src/lib/feed.ts`: ranking del feed por afinidad con el perfil.
+
+## Grafo de carreras
+
+`src/data/career-graph.json` es un grafo de 972 nodos (923 ocupaciones, 6 tipos RIASEC, habilidades y áreas de conocimiento) y 18.072 aristas, armado con `scripts/build-graph.ts` a partir de la base O*NET. El agente lo navega con las herramientas MCP `graph_match_profile`, `graph_explore` y `graph_search` para fundamentar sus recomendaciones, y `/perfil` dibuja el recorrido.
+
+This product includes information from the [O*NET 31.0 Database](https://www.onetcenter.org/database.html) by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA). Used under the [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license. O*NET® is a trademark of USDOL/ETA. Los nombres se tradujeron al español con IA.
+
+## Comprobación de calidad
+
+`npx tsx --env-file=.env.local scripts/eval-riasec.ts [cantidad]` simula personas con un tipo RIASEC conocido y corre el agente real hasta el cierre. Resultado al 17/10: acertó el tipo principal en 5 de 5 y cerró las 5 charlas.
