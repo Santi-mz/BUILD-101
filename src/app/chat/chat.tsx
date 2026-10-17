@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MIN_QUESTIONS } from "@/lib/profile";
+import { speak, stopSpeaking, toWav16k } from "@/lib/voice";
 
 type Line = { role: "user" | "assistant"; text: string };
 type Choices = { question: string; options: string[] } | null;
@@ -17,10 +18,21 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const started = useRef(false);
   const bottom = useRef<HTMLDivElement>(null);
+  // Voz: respuestas leídas en voz alta. El ref evita leer un estado viejo dentro de send.
+  const [voiceReplies, setVoiceReplies] = useState(false);
+  const voiceRef = useRef(false);
+  const toggleVoice = () => {
+    const on = !voiceRef.current;
+    voiceRef.current = on;
+    setVoiceReplies(on);
+    if (!on) stopSpeaking();
+  };
 
   const send = useCallback(async (body: { message?: string; wantsResults?: boolean }) => {
     setBusy(true);
     setChoices(null);
+    stopSpeaking();
+    let reply = "";
     if (body.message) setLines((l) => [...l, { role: "user", text: body.message! }]);
     setLines((l) => [...l, { role: "assistant", text: "" }]);
 
@@ -42,6 +54,7 @@ export default function Chat() {
         if (!part.trim()) continue;
         const e = JSON.parse(part);
         if (e.type === "text") {
+          reply += e.delta;
           setActivity(null);
           setLines((l) => {
             const last = l[l.length - 1];
@@ -49,6 +62,8 @@ export default function Chat() {
           });
         } else if (e.type === "tool") setActivity(e.label);
         else if (e.type === "choices") {
+          reply += `
+${e.question}`;
           setChoices({ question: e.question, options: e.options });
           setLines((l) => {
             const last = l[l.length - 1];
@@ -62,7 +77,49 @@ export default function Chat() {
     setLines((l) => l.filter((x) => x.text.trim()));
     setActivity(null);
     setBusy(false);
+    if (voiceRef.current) speak(reply);
   }, []);
+
+  // Voz a texto: graba con el micrófono, convierte a WAV y Gemini transcribe.
+  const [recording, setRecording] = useState(false);
+  const recorder = useRef<MediaRecorder | null>(null);
+  const startRecording = async () => {
+    stopSpeaking();
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setLines((l) => [...l, { role: "assistant", text: "No tengo permiso para usar el micrófono. Habilitalo en el navegador o escribí." }]);
+      return;
+    }
+    const chunks: Blob[] = [];
+    const rec = new MediaRecorder(stream);
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    rec.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      setRecording(false);
+      setBusy(true);
+      setActivity("Transcribiendo tu audio");
+      try {
+        const wav = await toWav16k(new Blob(chunks, { type: rec.mimeType }));
+        const res = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav });
+        const data = (await res.json()) as { text?: string; error?: string };
+        setActivity(null);
+        setBusy(false);
+        if (data.text) send({ message: data.text });
+        else setLines((l) => [...l, { role: "assistant", text: data.error ?? "No te escuché bien. Probá de nuevo, más cerca del micrófono." }]);
+      } catch {
+        setActivity(null);
+        setBusy(false);
+        setLines((l) => [...l, { role: "assistant", text: "No pude procesar el audio. Probá de nuevo o escribí." }]);
+      }
+    };
+    recorder.current = rec;
+    rec.start();
+    setRecording(true);
+    setTimeout(() => rec.state === "recording" && rec.stop(), 60_000); // máximo 1 minuto
+  };
+  const stopRecording = () => recorder.current?.state === "recording" && recorder.current.stop();
 
   useEffect(() => {
     if (started.current) return;
@@ -172,11 +229,23 @@ export default function Chat() {
             }}
             className="flex gap-2"
           >
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={busy && !recording}
+              aria-label={recording ? "Terminar y enviar audio" : "Hablar"}
+              title={recording ? "Tocá para enviar" : "Hablar"}
+              className={`flex w-12 shrink-0 items-center justify-center rounded-xl border disabled:opacity-60 ${recording ? "animate-pulse border-red-500 bg-red-500 text-white" : "border-border bg-card text-accent"}`}
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                {recording ? <rect x="7" y="7" width="10" height="10" rx="2" /> : <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>}
+              </svg>
+            </button>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={busy}
-              placeholder="Escribí lo que quieras…"
+              disabled={busy || recording}
+              placeholder={recording ? "Grabando… tocá el cuadrado para enviar" : "Escribí o tocá el micrófono para hablar…"}
               className="flex-1 rounded-xl border border-border bg-card px-4 py-3 outline-none focus:border-accent disabled:opacity-60"
             />
             <button disabled={busy} className="rounded-xl bg-accent px-5 font-medium text-background disabled:opacity-60">
@@ -184,6 +253,9 @@ export default function Chat() {
             </button>
           </form>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <button onClick={toggleVoice} className="text-muted underline-offset-4 hover:underline" aria-pressed={voiceReplies}>
+              {voiceReplies ? "Respuestas en voz: activadas" : "Escuchar las respuestas en voz"}
+            </button>
             <button
               disabled={busy}
               onClick={() => setShowImport((v) => !v)}
