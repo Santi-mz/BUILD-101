@@ -1,6 +1,12 @@
-# Rumbo
+# Rumbo · BUILD-101
 
 Orientación vocacional con IA. Un agente (Claude Opus 5.5) te entrevista con preguntas adaptativas, respalda cada inferencia con papers de PubMed vía un servidor MCP propio, arma tu perfil RIASEC y te recomienda carreras, cursos, pasantías, empleos y becas reales. El feed de noticias (ingestado y etiquetado por IA a diario) se ordena según tu perfil.
+
+Proyecto del hackathon Build 101 (Montevideo, 17/10/2026). Producción: https://rumbo-liart.vercel.app
+
+## Cómo trabajamos
+
+Ramas por tarea y PR a `main`; solo martotrigo mergea. Áreas, dueños y reglas para Claude Code y Kiro en [AGENTS.md](AGENTS.md).
 
 ## Puesta en marcha
 
