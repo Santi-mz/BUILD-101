@@ -1,0 +1,56 @@
+# Deploy a Vercel desde GitHub Actions (el repo es de Santi-mz y el proyecto de Vercel de martotrigo,
+# así que no usamos la integración Git de Vercel sino un token).
+# - push a main  -> producción (https://rumbo-liart.vercel.app)
+# - pull request -> preview, con la URL comentada en el PR
+# Requiere el secreto VERCEL_TOKEN en Settings > Secrets and variables > Actions.
+name: Deploy a Vercel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: team_az2VYpMWq72hwcO3p5LRc6nK
+  VERCEL_PROJECT_ID: prj_M1nKMFPO4SqwFSbXXvTU88GIjbHq
+  VERCEL_CLI: vercel@64.5.0
+
+jobs:
+  production:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npx --yes $VERCEL_CLI pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx --yes $VERCEL_CLI build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx --yes $VERCEL_CLI deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  preview:
+    # Los PRs desde forks no reciben secretos; solo ramas de este repo.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npx --yes $VERCEL_CLI pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - run: npx --yes $VERCEL_CLI build --token=${{ secrets.VERCEL_TOKEN }}
+      - id: deploy
+        run: |
+          echo "url=$(npx --yes $VERCEL_CLI deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+      - name: Comentar la URL en el PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --edit-last --create-if-none --body "Preview listo: ${{ steps.deploy.outputs.url }}"
