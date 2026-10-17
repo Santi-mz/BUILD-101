@@ -38,7 +38,7 @@ Somos tres trabajando en paralelo con Claude Code y Kiro. Estas reglas evitan qu
 
 ## Producto (no romper)
 
-- La IA es esencial, no decorativa: el perfil lo arma el agente; las noticias las etiqueta Claude; el feed se ordena por el perfil. Nada de datos mockeados.
-- Modelo: `claude-opus-5-5` vía `@anthropic-ai/sdk` (`anthropicClient()` en `src/lib/agent/run.ts`).
+- La IA es esencial, no decorativa: el perfil lo arma el agente; las noticias las etiqueta la IA; el feed se ordena por el perfil. Nada de datos mockeados.
+- Modelo: Gemini (`gemini-flash-latest`, plan gratis) vía `@google/genai` (`genai()` y `MODEL` en `src/lib/agent/run.ts`). Variable: `GEMINI_API_KEY`.
 - La condición de parada del chat la decide el servidor (`shouldStop` en `src/lib/profile.ts`), no el modelo.
 - Textos de la app en español rioplatense.

@@ -1,17 +1,15 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { ApiError, GoogleGenAI, type Content, type FunctionDeclaration, type Part } from "@google/genai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createRumboMcp } from "@/lib/mcp/server";
 import { SYSTEM_PROMPT } from "./prompt";
 
-export const MODEL = "claude-opus-5-5";
-
-// En Vercel la clave quedó cargada como "key"; se acepta ese nombre hasta renombrarla a ANTHROPIC_API_KEY.
-export const anthropicClient = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? process.env.key });
+// Modelo con plan gratis de la Gemini API (Google AI Studio).
+export const MODEL = "gemini-flash-latest";
 const MAX_STEPS = 12;
 
-type Msg = Anthropic.Beta.BetaMessageParam;
+export const genai = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export type AgentEvent =
   | { type: "text"; delta: string }
@@ -28,22 +26,46 @@ const TOOL_LABELS: Record<string, string> = {
   web_search: "Buscando opciones reales en la web",
 };
 
-// Herramienta local (no MCP): la UI la dibuja como botones de respuesta rápida.
-const OFFER_CHOICES: Anthropic.Beta.BetaTool = {
-  name: "offer_choices",
-  description:
-    "Muestra al usuario tu pregunta con 3 o 4 respuestas rápidas en botones. Llamalo al final de cada turno de entrevista; después terminá el turno sin escribir más.",
-  input_schema: {
-    type: "object",
-    properties: {
-      question: { type: "string" },
-      options: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
+// Herramientas locales (no MCP).
+const LOCAL_TOOLS: FunctionDeclaration[] = [
+  {
+    name: "offer_choices",
+    description:
+      "Muestra al usuario tu pregunta con 3 o 4 respuestas rápidas en botones. Llamalo al final de cada turno de entrevista; después terminá el turno sin escribir más.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: {
+        question: { type: "string" },
+        options: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4 },
+      },
+      required: ["question", "options"],
     },
-    required: ["question", "options"],
-    additionalProperties: false,
   },
-  strict: true,
-};
+  {
+    name: "web_search",
+    description:
+      "Busca en Google información actual y real (carreras, cursos, pasantías, llamados, becas en Uruguay). Devuelve un resumen con las URLs de las fuentes.",
+    parametersJsonSchema: {
+      type: "object",
+      properties: { query: { type: "string", description: "Búsqueda en español, ej: 'pasantías ingeniería Uruguay 2026'" } },
+      required: ["query"],
+    },
+  },
+];
+
+/** Búsqueda web con grounding de Google en una llamada aparte (no se mezcla con las funciones). */
+async function webSearch(ai: GoogleGenAI, query: string) {
+  const res = await ai.models.generateContent({
+    model: MODEL,
+    contents: `Buscá y resumí en viñetas opciones concretas y vigentes para: ${query}. Incluí nombre de la institución y la URL de cada una.`,
+    config: { tools: [{ googleSearch: {} }] },
+  });
+  const sources = (res.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [])
+    .map((c) => c.web)
+    .filter((w) => w?.uri)
+    .map((w) => ({ title: w!.title, url: w!.uri }));
+  return { summary: res.text ?? "", sources };
+}
 
 /** Conecta un cliente MCP en memoria al servidor MCP de Rumbo (mismo protocolo que el endpoint /api/mcp). */
 async function connectMcp(userId: string, supabase: SupabaseClient) {
@@ -52,105 +74,88 @@ async function connectMcp(userId: string, supabase: SupabaseClient) {
   const client = new Client({ name: "rumbo-agent", version: "0.1.0" });
   await Promise.all([server.connect(serverT), client.connect(clientT)]);
   const { tools } = await client.listTools();
-  const anthropicTools: Anthropic.Beta.BetaTool[] = tools.map((t) => {
-    const { $schema: _ignored, ...schema } = t.inputSchema as Record<string, unknown>;
-    return {
-      name: t.name,
-      description: t.description ?? "",
-      input_schema: schema as Anthropic.Beta.BetaTool.InputSchema,
-    };
+  const declarations: FunctionDeclaration[] = tools.map((t) => {
+    const { $schema: _schema, ...schema } = t.inputSchema as Record<string, unknown>;
+    void _schema;
+    return { name: t.name, description: t.description ?? "", parametersJsonSchema: schema };
   });
-  return { client, tools: anthropicTools, close: () => client.close() };
+  return { client, declarations, close: () => client.close() };
 }
 
 /**
  * Corre el loop del agente sobre `history` (se modifica en el lugar, solo se agregan mensajes).
- * Emite eventos para la UI a medida que el modelo escribe y usa herramientas.
+ * Emite eventos para la UI a medida que el modelo responde y usa herramientas.
  */
 export async function runAgent(opts: {
-  history: Msg[];
+  history: Content[];
   userId: string;
   supabase: SupabaseClient;
   emit: (e: AgentEvent) => void;
 }) {
   const { history, emit } = opts;
-  const anthropic = anthropicClient();
+  const ai = genai();
   const mcp = await connectMcp(opts.userId, opts.supabase);
 
   try {
     for (let step = 0; step < MAX_STEPS; step++) {
-      const stream = anthropic.beta.messages.stream({
+      const res = await ai.models.generateContent({
         model: MODEL,
-        max_tokens: 16000,
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-        output_config: { effort: "medium" },
-        cache_control: { type: "ephemeral" },
-        system: SYSTEM_PROMPT,
-        tools: [
-          ...mcp.tools,
-          OFFER_CHOICES,
-          {
-            type: "web_search_20260209",
-            name: "web_search",
-            max_uses: 4,
-            user_location: { type: "approximate", country: "UY", city: "Montevideo" },
-          },
-        ],
-        messages: history,
+        contents: history,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          tools: [{ functionDeclarations: [...mcp.declarations, ...LOCAL_TOOLS] }],
+        },
       });
 
-      stream.on("text", (delta) => emit({ type: "text", delta }));
-      stream.on("contentBlock", (block) => {
-        if (block.type === "server_tool_use") emit({ type: "tool", name: block.name, label: TOOL_LABELS[block.name] ?? block.name });
-      });
-
-      const message = await stream.finalMessage();
-      history.push({ role: "assistant", content: message.content });
-
-      if (message.stop_reason === "refusal") {
-        emit({ type: "error", message: "No puedo seguir con eso. Probemos por otro lado." });
+      const content = res.candidates?.[0]?.content;
+      if (!content?.parts?.length) {
+        emit({ type: "error", message: "No pude responder eso. Probemos de otra forma." });
         return;
       }
-      if (message.stop_reason === "pause_turn") continue;
+      // Se guarda tal cual (incluye las firmas de pensamiento que Gemini exige en el turno siguiente).
+      history.push({ role: "model", parts: content.parts });
 
-      const toolUses = message.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use");
-      if (toolUses.length === 0) return;
-      if (message.stop_reason === "max_tokens") {
-        emit({ type: "error", message: "La respuesta se cortó, probá de nuevo." });
-        return;
-      }
+      const text = content.parts.filter((p) => p.text && !p.thought).map((p) => p.text).join("");
+      if (text.trim()) emit({ type: "text", delta: text });
+
+      const calls = content.parts.filter((p) => p.functionCall).map((p) => p.functionCall!);
+      if (calls.length === 0) return;
 
       let endTurn = false;
-      const results = await Promise.all(
-        toolUses.map(async (tu): Promise<Anthropic.Beta.BetaToolResultBlockParam> => {
-          if (tu.name === "offer_choices") {
-            const input = tu.input as { question: string; options: string[] };
-            emit({ type: "choices", question: input.question, options: input.options });
+      const responses: Part[] = await Promise.all(
+        calls.map(async (call): Promise<Part> => {
+          const name = call.name ?? "";
+          const args = (call.args ?? {}) as Record<string, unknown>;
+          const reply = (response: Record<string, unknown>): Part => ({ functionResponse: { id: call.id, name, response } });
+
+          if (name === "offer_choices") {
+            emit({ type: "choices", question: String(args.question ?? ""), options: (args.options as string[]) ?? [] });
             endTurn = true;
-            return { type: "tool_result", tool_use_id: tu.id, content: "Opciones mostradas. Esperá la respuesta del usuario." };
+            return reply({ result: "Opciones mostradas. Esperá la respuesta del usuario." });
           }
-          emit({ type: "tool", name: tu.name, label: TOOL_LABELS[tu.name] ?? tu.name });
+          emit({ type: "tool", name, label: TOOL_LABELS[name] ?? name });
           try {
-            const res = await mcp.client.callTool({ name: tu.name, arguments: tu.input as Record<string, unknown> });
-            const content = (res.content as { type: string; text?: string }[])
-              .map((c) => c.text ?? "")
-              .join("\n");
-            return { type: "tool_result", tool_use_id: tu.id, content, is_error: Boolean(res.isError) };
+            if (name === "web_search") return reply(await webSearch(ai, String(args.query ?? "")));
+            const res = await mcp.client.callTool({ name, arguments: args });
+            const out = (res.content as { type: string; text?: string }[]).map((c) => c.text ?? "").join("\n");
+            return reply(res.isError ? { error: out } : { result: out });
           } catch (err) {
-            return { type: "tool_result", tool_use_id: tu.id, content: String(err), is_error: true };
+            return reply({ error: String(err) });
           }
         }),
       );
-      // Todos los resultados en un solo mensaje de usuario.
-      history.push({ role: "user", content: results });
+      // Todas las respuestas de funciones en un solo turno de usuario.
+      history.push({ role: "user", parts: responses });
       if (endTurn) return;
     }
   } catch (err) {
     console.error(err);
     emit({
       type: "error",
-      message: err instanceof Anthropic.APIError ? `Error de la API (${err.status})` : "Algo falló, probá de nuevo.",
+      message:
+        err instanceof ApiError && err.status === 429
+          ? "Estamos al límite de uso gratis por ahora. Esperá un minuto y probá de nuevo."
+          : "Algo falló, probá de nuevo.",
     });
   } finally {
     await mcp.close();

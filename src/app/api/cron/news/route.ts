@@ -1,6 +1,5 @@
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { MODEL, anthropicClient } from "@/lib/agent/run";
+import { MODEL, genai } from "@/lib/agent/run";
 import { NEWS_FEEDS, fetchFeed } from "@/lib/news-sources";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -34,21 +33,19 @@ export async function GET(req: Request) {
   if (fresh.length === 0) return Response.json({ inserted: 0 });
 
   // La IA resume, filtra y etiqueta cada noticia con pesos RIASEC: sin esto no hay feed personalizado.
-  const anthropic = anthropicClient();
-  const res = await anthropic.messages.parse({
+  const res = await genai().models.generateContent({
     model: MODEL,
-    max_tokens: 16000,
-    output_config: { effort: "low", format: zodOutputFormat(Tagged) },
-    system:
-      "Etiquetás noticias para una app de orientación vocacional en Uruguay. Para cada titular, decidí si es relevante, resumilo y asigná cuánto se relaciona con cada tipo RIASEC de Holland (0 a 1).",
-    messages: [
-      {
-        role: "user",
-        content: fresh.map((n, i) => `${i}. [${n.category}] ${n.title} (${n.source})`).join("\n"),
-      },
-    ],
+    contents: fresh.map((n, i) => `${i}. [${n.category}] ${n.title} (${n.source})`).join("\n"),
+    config: {
+      systemInstruction:
+        "Etiquetás noticias para una app de orientación vocacional en Uruguay. Para cada titular, decidí si es relevante, resumilo y asigná cuánto se relaciona con cada tipo RIASEC de Holland (0 a 1).",
+      responseMimeType: "application/json",
+      responseJsonSchema: z.toJSONSchema(Tagged),
+    },
   });
-  const tagged = res.parsed_output?.items ?? [];
+  const parsed = Tagged.safeParse(JSON.parse(res.text ?? "{}"));
+  if (!parsed.success) return Response.json({ error: "Respuesta de la IA con formato inválido" }, { status: 502 });
+  const tagged = parsed.data.items;
 
   const rows = tagged
     .filter((t) => t.relevant && fresh[t.index])

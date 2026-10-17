@@ -1,11 +1,12 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type { Content } from "@google/genai";
 import { runAgent, type AgentEvent } from "@/lib/agent/run";
 import { completeness, riasecCode, shouldStop, type ProfileData } from "@/lib/profile";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
 
-type Msg = Anthropic.Beta.BetaMessageParam;
+type Msg = Content;
+const userText = (text: string): Msg => ({ role: "user", parts: [{ text }] });
 
 export async function POST(req: Request) {
   const supabase = await supabaseServer();
@@ -25,10 +26,10 @@ export async function POST(req: Request) {
   let questionCount = prof?.question_count ?? 0;
 
   if (isStart) {
-    history.push({ role: "user", content: "Hola, quiero empezar mi orientación vocacional." });
+    history.push(userText("Hola, quiero empezar mi orientación vocacional."));
   } else {
     if (!message?.trim()) return new Response("Mensaje vacío", { status: 400 });
-    history.push({ role: "user", content: message.trim().slice(0, 2000) });
+    history.push(userText(message.trim().slice(0, 2000)));
     questionCount += 1;
   }
 
@@ -40,11 +41,12 @@ export async function POST(req: Request) {
       confidence: "todas las dimensiones superaron el umbral de confianza y el top 3 se mantuvo estable",
       max_questions: "se llegó al máximo de preguntas",
     }[stop];
-    // Mensaje de sistema a mitad de conversación (no rompe el caché del historial).
-    history.push({
-      role: "system",
-      content: `El perfil está listo para cerrar (${why}). No hagas más preguntas: buscá opciones reales con web_search, llamá a finalize_profile y escribí el cierre.`,
-    });
+    // Gemini no tiene mensajes de sistema a mitad de conversación: va como nota marcada dentro del turno del usuario.
+    history.push(
+      userText(
+        `[Mensaje del sistema, no del usuario] El perfil está listo para cerrar (${why}). No hagas más preguntas: buscá opciones reales con web_search, llamá a finalize_profile y escribí el cierre.`,
+      ),
+    );
   }
 
   await supabase
@@ -92,16 +94,13 @@ export async function GET() {
   const visible: { role: "user" | "assistant"; text: string }[] = [];
   let lastChoices: { question: string; options: string[] } | null = null;
   for (const m of ((conv?.messages as Msg[]) ?? []).slice(1)) {
-    if (m.role === "system") continue;
-    if (typeof m.content === "string") {
-      visible.push({ role: m.role, text: m.content });
-      lastChoices = null;
-      continue;
-    }
-    for (const b of m.content) {
-      if (b.type === "text" && b.text.trim()) visible.push({ role: m.role, text: b.text });
-      if (b.type === "tool_use" && b.name === "offer_choices") {
-        lastChoices = b.input as { question: string; options: string[] };
+    for (const part of m.parts ?? []) {
+      if (part.text && !part.thought && !part.text.startsWith("[Mensaje del sistema")) {
+        if (m.role === "user") lastChoices = null;
+        visible.push({ role: m.role === "model" ? "assistant" : "user", text: part.text });
+      }
+      if (part.functionCall?.name === "offer_choices") {
+        lastChoices = part.functionCall.args as { question: string; options: string[] };
         visible.push({ role: "assistant", text: lastChoices.question });
       }
     }
