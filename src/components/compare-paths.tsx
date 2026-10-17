@@ -51,7 +51,7 @@ export default function ComparePaths({ options }: { options: Option[] }) {
         {select(a, setA, "Camino A")}
         {select(b, setB, "Camino B")}
         <button onClick={compare} disabled={busy || a === b} className="rounded-xl bg-accent px-5 py-2.5 font-medium text-background disabled:opacity-60">
-          {busy ? "Comparando…" : "Comparar"}
+          {busy ? "Comparando… (~20 s)" : "Comparar"}
         </button>
       </div>
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
