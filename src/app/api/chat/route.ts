@@ -95,6 +95,11 @@ export async function GET() {
   let lastChoices: { question: string; options: string[] } | null = null;
   for (const m of ((conv?.messages as Msg[]) ?? []).slice(1)) {
     for (const part of m.parts ?? []) {
+      if (part.text?.startsWith("[Datos importados")) {
+        const what = part.text.includes("GitHub") ? "tu perfil de GitHub" : "tu CV / LinkedIn";
+        visible.push({ role: "user", text: `Compartí ${what}.` });
+        continue;
+      }
       if (part.text && !part.thought && !part.text.startsWith("[Mensaje del sistema")) {
         if (m.role === "user") lastChoices = null;
         visible.push({ role: m.role === "model" ? "assistant" : "user", text: part.text });
