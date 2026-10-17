@@ -1,6 +1,6 @@
 import type { Content } from "@google/genai";
 import { runAgent, type AgentEvent } from "@/lib/agent/run";
-import { completeness, riasecCode, shouldStop, type ProfileData } from "@/lib/profile";
+import { profileSnapshot, shouldStop, type ProfileData } from "@/lib/profile";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
@@ -74,13 +74,7 @@ export async function POST(req: Request) {
         .eq("user_id", user.id)
         .maybeSingle();
       const p = after?.data as ProfileData | null;
-      emit({
-        type: "profile",
-        status: after?.status,
-        questionCount: after?.question_count ?? questionCount,
-        completeness: after?.status === "final" ? 1 : completeness(p),
-        code: riasecCode(p),
-      });
+      emit({ type: "profile", ...profileSnapshot(p, after?.status, after?.question_count ?? questionCount) });
       controller.close();
     },
   });
@@ -122,11 +116,7 @@ export async function GET() {
   return Response.json({
     messages: visible,
     choices: lastChoices,
-    profile: {
-      status: prof?.status ?? "in_progress",
-      questionCount: prof?.question_count ?? 0,
-      completeness: prof?.status === "final" ? 1 : completeness(p),
-      code: riasecCode(p),
-    },
+    profile: profileSnapshot(p, prof?.status, prof?.question_count ?? 0),
+    isAnonymous: Boolean(user.is_anonymous),
   });
 }
