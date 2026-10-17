@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MIN_QUESTIONS } from "@/lib/profile";
-import { speak, stopSpeaking, toWav16k } from "@/lib/voice";
+import { speak, startDictation, stopSpeaking, toWav16k } from "@/lib/voice";
 
 type Line = { role: "user" | "assistant"; text: string };
 type Choices = { question: string; options: string[] } | null;
@@ -80,9 +80,12 @@ ${e.question}`;
     if (voiceRef.current) speak(reply);
   }, []);
 
-  // Voz a texto: graba con el micrófono, convierte a WAV y Gemini transcribe.
+  // Voz a texto: mientras hablás se ve el dictado en vivo; al terminar, Gemini transcribe el audio con la
+  // pregunta del agente como contexto. El texto queda en el campo para revisarlo antes de enviar.
   const [recording, setRecording] = useState(false);
+  const [voiceHint, setVoiceHint] = useState(false);
   const recorder = useRef<MediaRecorder | null>(null);
+  const textInput = useRef<HTMLInputElement>(null);
   const startRecording = async () => {
     stopSpeaking();
     let stream: MediaStream;
@@ -92,27 +95,37 @@ ${e.question}`;
       setLines((l) => [...l, { role: "assistant", text: "No tengo permiso para usar el micrófono. Habilitalo en el navegador o escribí." }]);
       return;
     }
+    const question = choices?.question ?? "";
+    setInput("");
+    setVoiceHint(false);
+    const stopDictation = startDictation((t) => setInput(t));
     const chunks: Blob[] = [];
     const rec = new MediaRecorder(stream);
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
     rec.onstop = async () => {
       stream.getTracks().forEach((t) => t.stop());
+      stopDictation?.();
       setRecording(false);
       setBusy(true);
-      setActivity("Transcribiendo tu audio");
+      setActivity("Ajustando la transcripción");
       try {
         const wav = await toWav16k(new Blob(chunks, { type: rec.mimeType }));
-        const res = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "audio/wav" }, body: wav });
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "audio/wav", "x-rumbo-pregunta": encodeURIComponent(question) },
+          body: wav,
+        });
         const data = (await res.json()) as { text?: string; error?: string };
-        setActivity(null);
-        setBusy(false);
-        if (data.text) send({ message: data.text });
-        else setLines((l) => [...l, { role: "assistant", text: data.error ?? "No te escuché bien. Probá de nuevo, más cerca del micrófono." }]);
+        if (data.text) setInput(data.text);
+        else if (!stopDictation) setLines((l) => [...l, { role: "assistant", text: data.error ?? "No te escuché bien. Probá de nuevo, más cerca del micrófono." }]);
       } catch {
-        setActivity(null);
-        setBusy(false);
-        setLines((l) => [...l, { role: "assistant", text: "No pude procesar el audio. Probá de nuevo o escribí." }]);
+        if (!stopDictation) setLines((l) => [...l, { role: "assistant", text: "No pude procesar el audio. Probá de nuevo o escribí." }]);
       }
+      // Si Gemini falla, queda lo que entendió el dictado en vivo. Siempre se revisa antes de enviar.
+      setActivity(null);
+      setBusy(false);
+      setVoiceHint(true);
+      setTimeout(() => textInput.current?.focus(), 0);
     };
     recorder.current = rec;
     rec.start();
@@ -226,6 +239,7 @@ ${e.question}`;
               if (!input.trim() || busy) return;
               send({ message: input });
               setInput("");
+              setVoiceHint(false);
             }}
             className="flex gap-2"
           >
@@ -242,9 +256,11 @@ ${e.question}`;
               </svg>
             </button>
             <input
+              ref={textInput}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={busy || recording}
+              readOnly={recording}
+              disabled={busy && !recording}
               placeholder={recording ? "Grabando… tocá el cuadrado para enviar" : "Escribí o tocá el micrófono para hablar…"}
               className="flex-1 rounded-xl border border-border bg-card px-4 py-3 outline-none focus:border-accent disabled:opacity-60"
             />
@@ -252,6 +268,7 @@ ${e.question}`;
               Enviar
             </button>
           </form>
+          {voiceHint && input && <p className="text-xs text-muted">Revisá lo que entendí, corregilo si hace falta y tocá Enviar.</p>}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <button onClick={toggleVoice} className="text-muted underline-offset-4 hover:underline" aria-pressed={voiceReplies}>
               {voiceReplies ? "Respuestas en voz: activadas" : "Escuchar las respuestas en voz"}
