@@ -4,7 +4,9 @@ import { useEffect } from "react";
 
 // Error en el layout raíz: reemplaza toda la página, así que trae su propio <html> y <body>.
 export default function GlobalError({ error, retry }: { error: unknown; retry: () => void }) {
-  useEffect(() => console.error(error), [error]);
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
   const e = error as Error & { digest?: string };
   const detail = e instanceof Error ? [e.message, e.digest && `código ${e.digest}`].filter(Boolean).join(" · ") : String(error);
 

@@ -78,7 +78,10 @@ export default function Chat() {
       });
   }, [send]);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [lines, activity]);
+  // Con llaves: en Chrome nuevo scrollIntoView devuelve una Promise, y React la tomaría como función de limpieza.
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: "smooth" });
+  }, [lines, activity]);
 
   const final = profile.status === "final";
   const pct = Math.round(profile.completeness * 100);

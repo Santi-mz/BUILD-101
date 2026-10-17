@@ -4,7 +4,9 @@ import { useEffect } from "react";
 
 // Pantalla de error de las páginas: muestra qué falló (sirve para depurar) y deja reintentar.
 export default function ErrorPage({ error, retry }: { error: unknown; retry: () => void }) {
-  useEffect(() => console.error(error), [error]);
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
   const e = error as Error & { digest?: string };
   const detail = e instanceof Error ? [e.message, e.digest && `código ${e.digest}`].filter(Boolean).join(" · ") : String(error);
 
