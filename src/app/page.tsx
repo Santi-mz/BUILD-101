@@ -175,7 +175,7 @@ export default function Home() {
           </p>
         </section>
 
-        <Suspense fallback={<p id="feed" className="scroll-mt-20 pb-20 text-sm text-muted">Cargando noticias…</p>}>
+        <Suspense fallback={<FeedSkeleton />}>
           <Feed />
         </Suspense>
       </div>
@@ -250,6 +250,45 @@ async function Feed() {
           })}
         </div>
       )}
+    </section>
+  );
+}
+
+/** Misma estructura que Feed (encabezado y grilla de tarjetas) para que nada salte cuando llegan las noticias. */
+function FeedSkeleton() {
+  return (
+    <section id="feed" aria-busy="true" className="scroll-mt-20 pb-20">
+      <p role="status" className="sr-only">
+        Cargando noticias
+      </p>
+      <div aria-hidden className="motion-safe:animate-pulse">
+        <div className="mb-8 max-w-2xl">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent">Feed</p>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Noticias</h2>
+          <div className="mt-3 h-3.5 w-4/5 max-w-md rounded-full bg-accent-soft" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5">
+              <div className="mb-3 flex gap-2">
+                <div className="h-5 w-16 rounded-full bg-accent-soft" />
+                <div className="h-5 w-20 rounded-full bg-accent-soft/60" />
+              </div>
+              <div className="h-5 w-11/12 rounded-full bg-accent-soft" />
+              <div className="mt-2 h-5 w-2/3 rounded-full bg-accent-soft" />
+              <div className="mt-3 space-y-2">
+                <div className="h-3.5 rounded-full bg-accent-soft/60" />
+                <div className="h-3.5 rounded-full bg-accent-soft/60" />
+                <div className="h-3.5 w-3/4 rounded-full bg-accent-soft/60" />
+              </div>
+              <div className="mt-4 flex justify-between border-t border-border pt-3">
+                <div className="h-3.5 w-28 rounded-full bg-accent-soft/60" />
+                <div className="h-3.5 w-10 rounded-full bg-accent-soft/60" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
