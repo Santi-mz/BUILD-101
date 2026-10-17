@@ -2,9 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { searchPubmed } from "@/lib/pubmed";
-import { profileUpdateSchema, topThree, type ProfileData } from "@/lib/profile";
+import { GRAPH_SOURCE, matchProfile, neighbors, search } from "@/lib/graph";
+import { MIN_QUESTIONS, profileUpdateSchema, topThree, type ProfileData } from "@/lib/profile";
 
-type Ctx = { userId?: string; supabase?: SupabaseClient };
+// trail: nodos del grafo que el agente visitó en este turno (la ruta del chat los guarda en el perfil).
+type Ctx = { userId?: string; supabase?: SupabaseClient; trail?: string[] };
 
 const text = (value: unknown) => ({
   content: [{ type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value) }],
@@ -48,6 +50,56 @@ export function createRumboMcp(ctx: Ctx = {}) {
         .limit(8);
       return text(data ?? []);
     },
+  );
+
+  // --- Grafo de carreras (O*NET): el agente lo navega para fundamentar las recomendaciones ---
+  const visit = (...ids: (string | undefined)[]) => ids.forEach((id) => id && ctx.trail?.push(id));
+  const riasecShape = z.object({ R: z.number(), I: z.number(), A: z.number(), S: z.number(), E: z.number(), C: z.number() });
+
+  server.registerTool(
+    "graph_match_profile",
+    {
+      description:
+        `Punto de entrada al grafo de carreras (923 ocupaciones reales de ${GRAPH_SOURCE.split(",")[0]}). Devuelve las ocupaciones cuyo perfil RIASEC más se parece al del usuario, con % de afinidad y preparación requerida. Pasá los puntajes RIASEC actuales (0 a 1).`,
+      inputSchema: {
+        riasec: riasecShape,
+        max_preparation: z.number().int().min(1).max(5).optional().describe("Nivel máximo de preparación: 3 = técnico, 4 = universitaria, 5 = posgrado"),
+        limit: z.number().int().min(3).max(12).optional(),
+      },
+    },
+    async ({ riasec, max_preparation, limit }) => {
+      const res = matchProfile(riasec, limit ?? 8, max_preparation);
+      const top = Object.entries(riasec).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => `riasec:${k}`);
+      visit(...top, ...res.slice(0, 5).map((r) => r.id));
+      return text(res);
+    },
+  );
+
+  server.registerTool(
+    "graph_explore",
+    {
+      description:
+        "Navega el grafo de carreras desde un nodo. Relaciones: related (ocupaciones relacionadas), knowledge (áreas de conocimiento = qué estudiar), skill (habilidades clave), interest (tipos RIASEC). Usalo para ir de una ocupación a sus vecinas y a lo que hay que estudiar.",
+      inputSchema: {
+        node_id: z.string().describe("Id del nodo, ej: occ:15-1252.00, know:2.C.3.a, riasec:S"),
+        relation: z.enum(["related", "knowledge", "skill", "interest"]).optional(),
+        limit: z.number().int().min(1).max(15).optional(),
+      },
+    },
+    async ({ node_id, relation, limit }) => {
+      const res = neighbors(node_id, relation, limit ?? 8);
+      visit(node_id, ...res.slice(0, 5).map((r) => r.node.id));
+      return text(res.length ? res : "Nodo sin vecinos o id inexistente. Usá graph_search o graph_match_profile para obtener ids válidos.");
+    },
+  );
+
+  server.registerTool(
+    "graph_search",
+    {
+      description: "Busca nodos del grafo de carreras por nombre (español o inglés): ocupaciones, habilidades o áreas de conocimiento.",
+      inputSchema: { text: z.string(), kind: z.enum(["occupation", "skill", "knowledge", "riasec"]).optional() },
+    },
+    async ({ text: q, kind }) => text(search(q, kind)),
   );
 
   if (!ctx.userId || !ctx.supabase) return server;
@@ -110,6 +162,13 @@ export function createRumboMcp(ctx: Ctx = {}) {
     },
     async ({ recommendations }) => {
       const prev = await load();
+      // Reglas duras (el prompt las pide, pero el modelo a veces se adelanta).
+      const answers = prev?.question_count ?? 0;
+      if (answers < MIN_QUESTIONS)
+        return text(`Todavía no podés cerrar: van ${answers} respuestas y el mínimo es ${MIN_QUESTIONS}. Seguí entrevistando con offer_choices.`);
+      const evidence = (prev?.data as ProfileData | undefined)?.evidence ?? [];
+      if (evidence.length < 2)
+        return text(`Antes de cerrar guardá al menos 2 papers de PubMed en evidence con update_profile (hay ${evidence.length}). Usá los PMID que ya encontraste con search_pubmed.`);
       const { error } = await supabase
         .from("profiles")
         .update({

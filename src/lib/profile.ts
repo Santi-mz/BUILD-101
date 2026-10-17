@@ -46,6 +46,7 @@ export const profileUpdateSchema = z.object({
 export type ProfileData = z.infer<typeof profileUpdateSchema> & {
   history?: string[][]; // top-3 RIASEC de cada actualización, para medir estabilidad
   recommendations?: Recommendation[];
+  graph_trail?: string[]; // nodos del grafo de carreras que recorrió el agente
   imports?: { source: "cv" | "github"; summary: string; at: string }[]; // datos traídos de otras apps
 };
 
@@ -60,6 +61,7 @@ export type Recommendation = {
 export const CONFIDENCE_THRESHOLD = 0.75;
 export const STABLE_ROUNDS = 2;
 export const MAX_QUESTIONS = 14;
+export const MIN_QUESTIONS = 5; // no cerrar por confianza antes de esto: el perfil queda flojo
 
 export function topThree(p: Pick<ProfileData, "riasec">): RiasecKey[] {
   return [...RIASEC_KEYS].sort((a, b) => p.riasec[b].score - p.riasec[a].score).slice(0, 3);
@@ -76,7 +78,7 @@ export type StopReason = "confidence" | "max_questions" | null;
 
 export function shouldStop(p: ProfileData | null, questionCount: number): StopReason {
   if (questionCount >= MAX_QUESTIONS) return "max_questions";
-  if (!p?.riasec) return null;
+  if (!p?.riasec || questionCount < MIN_QUESTIONS) return null;
   const confident = RIASEC_KEYS.every((k) => p.riasec[k].confidence >= CONFIDENCE_THRESHOLD);
   const h = p.history ?? [];
   const stable =

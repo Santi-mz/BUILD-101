@@ -57,7 +57,15 @@ export async function POST(req: Request) {
   const body = new ReadableStream({
     async start(controller) {
       const emit = (e: AgentEvent | Record<string, unknown>) => controller.enqueue(encoder.encode(JSON.stringify(e) + "\n"));
-      await runAgent({ history, userId: user.id, supabase, emit });
+      const trail: string[] = [];
+      await runAgent({ history, userId: user.id, supabase, emit, trail });
+      if (trail.length) {
+        // Recorrido del agente por el grafo de carreras: se guarda para dibujarlo en /perfil.
+        const { data: cur } = await supabase.from("profiles").select("data").eq("user_id", user.id).maybeSingle();
+        const d = (cur?.data ?? {}) as ProfileData;
+        const merged = [...new Set([...(d.graph_trail ?? []), ...trail])].slice(-40);
+        await supabase.from("profiles").update({ data: { ...d, graph_trail: merged } }).eq("user_id", user.id);
+      }
 
       await supabase.from("conversations").upsert({ user_id: user.id, messages: history, updated_at: new Date().toISOString() });
       const { data: after } = await supabase

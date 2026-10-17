@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { RIASEC_KEYS, RIASEC_LABELS, riasecCode, type ProfileData } from "@/lib/profile";
+import CareerMap from "@/components/career-map";
 import { supabaseServer } from "@/lib/supabase/server";
 
 const TYPE_LABEL = { carrera: "Carrera", curso: "Curso", pasantia: "Pasantía", empleo: "Empleo", beca: "Beca" };
@@ -60,6 +61,8 @@ async function PerfilInner() {
           <ul className="list-inside list-disc text-sm text-muted">{p.values.map((s) => <li key={s}>{s}</li>)}</ul>
         </div>
       </section>
+
+      {p.graph_trail && p.graph_trail.length > 0 && <CareerMap ids={p.graph_trail} />}
 
       {p.recommendations && p.recommendations.length > 0 && (
         <section>
