@@ -2,120 +2,77 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import LiveVoice from "@/components/live-voice";
-import SaveAccount from "@/components/save-account";
-import { MIN_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, type ProfileSnapshot } from "@/lib/profile";
+import { call, type View } from "@/components/api-client";
 import { speak, startDictation, stopSpeaking, toWav16k } from "@/lib/voice";
 
-type Line = { role: "user" | "assistant"; text: string };
-type Choices = { question: string; options: string[] } | null;
-type LogItem = { id: number; label: string };
-
-const EMPTY: ProfileSnapshot = { status: "in_progress", questionCount: 0, completeness: 0, code: "", riasec: null, evidence: 0, strengths: [] };
+const AGE_OPTIONS = [
+  { value: "A14_15", label: "14 a 15" },
+  { value: "A16_17", label: "16 a 17" },
+  { value: "A18_21", label: "18 a 21" },
+  { value: "A22_25", label: "22 a 25" },
+  { value: "A26_MAS", label: "26 o más" },
+] as const;
 
 export default function Chat() {
-  const [lines, setLines] = useState<Line[]>([]);
-  const [choices, setChoices] = useState<Choices>(null);
-  const [profile, setProfile] = useState<ProfileSnapshot>(EMPTY);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const [activity, setActivity] = useState<string | null>(null);
-  const [log, setLog] = useState<LogItem[]>([]);
+  const [view, setView] = useState<View | null>(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [input, setInput] = useState("");
-  const [showPanel, setShowPanel] = useState(false);
-  const [live, setLive] = useState(false);
-  const started = useRef(false);
+  const [pending, setPending] = useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
-  const logId = useRef(0);
-
-  // Voz: respuestas leídas en voz alta. El ref evita leer un estado viejo dentro de send.
-  const [voiceReplies, setVoiceReplies] = useState(false);
+  const textInput = useRef<HTMLInputElement>(null);
   const voiceRef = useRef(false);
-  const toggleVoice = () => {
-    const on = !voiceRef.current;
-    voiceRef.current = on;
-    setVoiceReplies(on);
-    if (!on) stopSpeaking();
-  };
+  const [voiceReplies, setVoiceReplies] = useState(false);
 
-  const note = (label: string) => setLog((l) => [{ id: ++logId.current, label }, ...l].slice(0, 8));
-
-  const send = useCallback(async (body: { message?: string; wantsResults?: boolean }) => {
-    setBusy(true);
-    setChoices(null);
-    stopSpeaking();
-    let reply = "";
-    if (body.message) setLines((l) => [...l, { role: "user", text: body.message! }]);
-    setLines((l) => [...l, { role: "assistant", text: "" }]);
-
-    const res = await fetch("/api/chat", { method: "POST", body: JSON.stringify(body) });
-    if (!res.ok || !res.body) {
-      setLines((l) => [...l.slice(0, -1), { role: "assistant", text: "No pude conectarme. Probá de nuevo." }]);
-      setBusy(false);
-      return;
-    }
-    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-    let buffer = "";
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += value;
-      const parts = buffer.split("\n");
-      buffer = parts.pop() ?? "";
-      for (const part of parts) {
-        if (!part.trim()) continue;
-        const e = JSON.parse(part);
-        if (e.type === "text") {
-          reply += e.delta;
-          setActivity(null);
-          setLines((l) => {
-            const last = l[l.length - 1];
-            return [...l.slice(0, -1), { ...last, text: last.text + e.delta }];
-          });
-        } else if (e.type === "tool") {
-          setActivity(e.label);
-          note(e.label);
-        } else if (e.type === "choices") {
-          reply += `\n${e.question}`;
-          setChoices({ question: e.question, options: e.options });
-          setLines((l) => {
-            const last = l[l.length - 1];
-            return [...l.slice(0, -1), { ...last, text: last.text ? `${last.text}\n\n${e.question}` : e.question }];
-          });
-        } else if (e.type === "error") {
-          setLines((l) => [...l, { role: "assistant", text: e.message }]);
-        } else if (e.type === "profile") {
-          const { type: _t, ...snap } = e;
-          void _t;
-          setProfile(snap as ProfileSnapshot);
-        }
-      }
-    }
-    setLines((l) => l.filter((x) => x.text.trim()));
-    setActivity(null);
-    setBusy(false);
-    if (voiceRef.current) speak(reply);
+  useEffect(() => {
+    call("/api/session").then((r) => {
+      if (r.view) setView(r.view);
+      setLoading(false);
+    });
   }, []);
 
-  // Voz a texto: dictado en vivo mientras hablás; al terminar, Gemini transcribe el audio con la pregunta
-  // del agente como contexto. El texto queda en el campo para revisarlo antes de enviar.
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: "smooth" });
+  }, [view?.messages.length, pending]);
+
+  const send = useCallback(async (message: string, close = false) => {
+    setBusy(true);
+    setError("");
+    setPending(message);
+    stopSpeaking();
+    const r = await call("/api/chat", { body: { message, close } });
+    setPending(null);
+    setBusy(false);
+    if (r.error) {
+      setError(r.error);
+      return;
+    }
+    setView(r.view!);
+    if (voiceRef.current && r.view?.reply) speak(r.view.reply);
+  }, []);
+
+  const correct = async (id: string, status: "REJECTED" | "CONFIRMED") => {
+    const r = await call("/api/session/evidence", { body: { id, status } });
+    if (r.view) setView(r.view);
+    else if (r.error) setError(r.error);
+  };
+
+  // Voz a texto (se mantiene del chat anterior): dictado en vivo + transcripción con Gemini; siempre se revisa antes de enviar.
   const [recording, setRecording] = useState(false);
-  const [voiceHint, setVoiceHint] = useState(false);
   const recorder = useRef<MediaRecorder | null>(null);
-  const textInput = useRef<HTMLTextAreaElement>(null);
   const startRecording = async () => {
     stopSpeaking();
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      setLines((l) => [...l, { role: "assistant", text: "No tengo permiso para usar el micrófono. Habilitalo en el navegador o escribí." }]);
+      setError("No tengo permiso para usar el micrófono. Habilitalo en el navegador o escribí.");
       return;
     }
-    const question = choices?.question ?? "";
+    const lastQuestion = [...(view?.messages ?? [])].reverse().find((m) => m.role === "ASSISTANT")?.content ?? "";
     setInput("");
-    setVoiceHint(false);
     const stopDictation = startDictation((t) => setInput(t));
     const chunks: Blob[] = [];
     const rec = new MediaRecorder(stream);
@@ -125,372 +82,278 @@ export default function Chat() {
       stopDictation?.();
       setRecording(false);
       setBusy(true);
-      setActivity("Ajustando la transcripción");
       try {
         const wav = await toWav16k(new Blob(chunks, { type: rec.mimeType }));
         const res = await fetch("/api/transcribe", {
           method: "POST",
-          headers: { "Content-Type": "audio/wav", "x-rumbo-pregunta": encodeURIComponent(question) },
+          headers: { "Content-Type": "audio/wav", "x-rumbo-pregunta": encodeURIComponent(lastQuestion.slice(0, 300)) },
           body: wav,
         });
-        const data = (await res.json()) as { text?: string; error?: string };
+        const data = (await res.json()) as { text?: string };
         if (data.text) setInput(data.text);
-        else if (!stopDictation) setLines((l) => [...l, { role: "assistant", text: data.error ?? "No te escuché bien. Probá de nuevo, más cerca del micrófono." }]);
       } catch {
-        if (!stopDictation) setLines((l) => [...l, { role: "assistant", text: "No pude procesar el audio. Probá de nuevo o escribí." }]);
+        // queda lo que entendió el dictado en vivo
       }
-      setActivity(null);
       setBusy(false);
-      setVoiceHint(true);
       setTimeout(() => textInput.current?.focus(), 0);
     };
     recorder.current = rec;
     rec.start();
     setRecording(true);
-    setTimeout(() => rec.state === "recording" && rec.stop(), 60_000); // máximo 1 minuto
+    setTimeout(() => rec.state === "recording" && rec.stop(), 60_000);
   };
   const stopRecording = () => recorder.current?.state === "recording" && recorder.current.stop();
 
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    fetch("/api/chat")
-      .then((r) => r.json())
-      .then((data) => {
-        setProfile(data.profile);
-        setIsAnonymous(Boolean(data.isAnonymous));
-        setLoaded(true);
-        if (data.messages.length === 0) send({});
-        else {
-          setLines(data.messages);
-          setChoices(data.choices);
-        }
-      });
-  }, [send]);
+  if (loading) return <p className="p-10 text-center text-sm text-muted">Cargando…</p>;
+  if (!view) return <Onboarding onStart={setView} />;
 
-  // Con llaves: en Chrome nuevo scrollIntoView devuelve una Promise, y React la tomaría como función de limpieza.
-  useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [lines, activity, choices]);
-
-  // Importar datos de otras apps (CV / LinkedIn en PDF, GitHub): la IA los extrae y el agente los usa.
-  const [showImport, setShowImport] = useState(false);
-  const [github, setGithub] = useState("");
-  const fileInput = useRef<HTMLInputElement>(null);
-  const importFrom = useCallback(
-    async (source: "cv" | "github", payload: File | string) => {
-      setBusy(true);
-      setChoices(null);
-      setActivity(source === "cv" ? "Leyendo tu CV" : "Revisando tu GitHub");
-      note(source === "cv" ? "Leyó tu CV con IA" : "Revisó tu GitHub con IA");
-      const form = new FormData();
-      form.set("source", source);
-      form.set(source === "cv" ? "file" : "username", payload);
-      const res = await fetch("/api/import", { method: "POST", body: form });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setActivity(null);
-      setBusy(false);
-      if (!res.ok) {
-        setLines((l) => [...l, { role: "assistant", text: data.error ?? "No pude leer eso. Probá de nuevo." }]);
-        return;
-      }
-      setShowImport(false);
-      send({ message: `Te compartí ${source === "cv" ? "mi CV / LinkedIn" : "mi GitHub"}. Usalo para ajustar mi perfil.` });
-    },
-    [send],
-  );
-
-  const submit = () => {
-    if (!input.trim() || busy || recording) return;
-    send({ message: input.trim() });
-    setInput("");
-    setVoiceHint(false);
-  };
-
-  const final = profile.status === "final";
-  const pct = final ? 100 : Math.round(profile.completeness * 100);
-  const waitingFirst = lines.length === 0;
-
-  const panel = (
-    <div className="space-y-5">
-      <div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted">Tu perfil en vivo</span>
-          <span className="font-mono text-sm text-accent">{profile.code || "—"}</span>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-accent-soft">
-          <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${pct}%` }} />
-        </div>
-        <p className="mt-1.5 text-xs text-muted">
-          {final ? "Perfil completo" : `${pct}% definido · ${profile.questionCount} respuestas`} · {profile.evidence} papers
-        </p>
-      </div>
-      <div className="space-y-2">
-        {RIASEC_KEYS.map((k) => {
-          const d = profile.riasec?.[k];
-          return (
-            <div key={k} className="grid grid-cols-[92px_1fr] items-center gap-2 text-xs">
-              <span className="text-muted">{RIASEC_LABELS[k]}</span>
-              <div className="h-2 overflow-hidden rounded-full bg-accent-soft">
-                <div
-                  className="h-full rounded-full bg-accent transition-all duration-700"
-                  style={{ width: `${(d?.score ?? 0) * 100}%`, opacity: 0.35 + (d?.confidence ?? 0) * 0.65 }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {profile.strengths.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {profile.strengths.map((s) => (
-            <span key={s} className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs text-accent">
-              {s}
-            </span>
-          ))}
-        </div>
-      )}
-      {log.length > 0 && (
-        <div>
-          <span className="text-xs font-medium uppercase tracking-wide text-muted">Lo que hizo el agente</span>
-          <ul className="mt-2 space-y-1.5 text-xs text-muted">
-            {log.map((l) => (
-              <li key={l.id} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                {l.label}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {isAnonymous && profile.questionCount >= 2 && (
-        <div className="rounded-2xl border border-border bg-background p-3">
-          <p className="mb-2 text-xs font-medium">Guardá tu perfil para no perderlo</p>
-          <SaveAccount compact />
-        </div>
-      )}
-      <Link href="/perfil" className="block rounded-xl border border-border py-2 text-center text-sm font-medium hover:border-accent">
-        Ver mi perfil
-      </Link>
-    </div>
-  );
-
-  const closeLive = () => {
-    setLive(false);
-    fetch("/api/chat")
-      .then((r) => r.json())
-      .then((data) => {
-        setProfile(data.profile);
-        if (data.messages.length) {
-          setLines(data.messages);
-          setChoices(data.choices);
-        }
-      });
-  };
+  const done = view.status === "COMPLETED";
+  const lastIsAssistant = view.messages.at(-1)?.role === "ASSISTANT";
+  const quick = view.pendingConfirmation && lastIsAssistant && !busy ? ["Sí, me representa", "Más o menos", "No, no es así"] : [];
 
   return (
-    // Fijo debajo del header (57 px): el chat ocupa toda la pantalla y no compite con el scroll de la página.
-    <div className="fixed inset-x-0 bottom-0 top-[57px] z-0 bg-background">
-      <div className="mx-auto grid h-full max-w-6xl lg:grid-cols-[1fr_300px] lg:gap-8 lg:px-6">
-        <div className="flex min-h-0 flex-col">
-          {/* Barra superior en celular */}
-          <button onClick={() => setShowPanel((v) => !v)} className="flex items-center gap-3 border-b border-border px-4 py-2.5 text-left lg:hidden">
-            <span className="font-mono text-sm text-accent">{profile.code || "···"}</span>
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-accent-soft">
-              <span className="block h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${pct}%` }} />
-            </span>
-            <span className="text-xs text-muted">{showPanel ? "Ocultar" : `${pct}% · ver perfil`}</span>
-          </button>
-          {showPanel && <div className="max-h-[50%] overflow-y-auto border-b border-border bg-card p-4 lg:hidden">{panel}</div>}
+    <div className="mx-auto flex h-[calc(100dvh-57px)] max-w-6xl gap-6 px-4">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Stages view={view} onPanel={() => setPanelOpen((v) => !v)} panelCount={view.panel.length} />
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 lg:px-0">
-            <div className="mx-auto max-w-2xl space-y-5 py-6">
-              {waitingFirst && (
-                <div className="flex gap-3">
-                  <Avatar />
-                  <div className="rounded-2xl rounded-tl-md border border-border bg-card px-4 py-3 text-sm text-muted">
-                    {loaded ? "Rumbo está preparando tu primera pregunta" : "Cargando tu charla"}
-                    <Dots />
-                  </div>
-                </div>
+        <div className="flex-1 space-y-4 overflow-y-auto py-6" aria-live="polite">
+          {view.messages.map((m) => (
+            <div key={m.id} className={m.role === "USER" ? "flex justify-end" : "flex"}>
+              <div
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${
+                  m.role === "USER" ? "bg-accent text-background" : m.action === "SAFETY" ? "border-2 border-accent bg-card" : "border border-border bg-card"
+                }`}
+              >
+                {m.content}
+              </div>
+            </div>
+          ))}
+          {pending && (
+            <>
+              <div className="flex justify-end">
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-accent px-4 py-3 text-[15px] text-background opacity-70">{pending}</div>
+              </div>
+              <p className="animate-pulse text-sm text-muted">Pensando…</p>
+            </>
+          )}
+          {done && (
+            <Link href="/resultado" className="block rounded-2xl bg-accent-soft p-4 text-center font-medium text-accent">
+              Ver lo que entendí y explorar caminos →
+            </Link>
+          )}
+          {error && <p className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
+          <div ref={bottom} />
+        </div>
+
+        {panelOpen && (
+          <div className="mb-3 max-h-[45vh] overflow-y-auto rounded-2xl border border-border bg-card p-4 lg:hidden">
+            <Panel view={view} onCorrect={correct} />
+          </div>
+        )}
+
+        {!done && (
+          <div className="space-y-3 border-t border-border py-4">
+            {quick.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {quick.map((q) => (
+                  <button key={q} onClick={() => send(q)} className="rounded-full border border-accent px-4 py-1.5 text-sm text-accent hover:bg-accent-soft">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!input.trim() || busy) return;
+                send(input.trim());
+                setInput("");
+              }}
+              className="flex gap-2"
+            >
+              <button
+                type="button"
+                onClick={recording ? stopRecording : startRecording}
+                disabled={busy && !recording}
+                aria-label={recording ? "Terminar de grabar" : "Hablar"}
+                className={`flex w-12 shrink-0 items-center justify-center rounded-xl border disabled:opacity-60 ${recording ? "animate-pulse border-red-500 bg-red-500 text-white" : "border-border bg-card text-accent"}`}
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  {recording ? <rect x="7" y="7" width="10" height="10" rx="2" /> : <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>}
+                </svg>
+              </button>
+              <input
+                ref={textInput}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                readOnly={recording}
+                disabled={busy && !recording}
+                maxLength={2000}
+                placeholder={recording ? "Grabando… tocá el cuadrado para terminar" : "Escribí o tocá el micrófono…"}
+                className="min-w-0 flex-1 rounded-xl border border-border bg-card px-4 py-3 outline-none focus:border-accent disabled:opacity-60"
+              />
+              <button disabled={busy} className="rounded-xl bg-accent px-5 font-medium text-background disabled:opacity-60">
+                Enviar
+              </button>
+            </form>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <button
+                onClick={() => {
+                  voiceRef.current = !voiceRef.current;
+                  setVoiceReplies(voiceRef.current);
+                  if (!voiceRef.current) stopSpeaking();
+                }}
+                className="text-muted underline-offset-4 hover:underline"
+                aria-pressed={voiceReplies}
+              >
+                {voiceReplies ? "Respuestas en voz: activadas" : "Escuchar las respuestas en voz"}
+              </button>
+              {view.canClose && (
+                <button disabled={busy} onClick={() => send("Quiero terminar y ver lo que entendiste.", true)} className="text-muted underline-offset-4 hover:underline disabled:opacity-60">
+                  Terminar y ver lo que entendí
+                </button>
               )}
-              {lines.map((l, i) =>
-                l.role === "user" ? (
-                  <div key={i} className="flex justify-end">
-                    <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-[15px] leading-relaxed text-background">{l.text}</div>
-                  </div>
-                ) : (
-                  <div key={i} className="flex gap-3">
-                    <Avatar />
-                    <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tl-md border border-border bg-card px-4 py-3 text-[15px] leading-relaxed">
-                      {l.text || <Dots />}
-                    </div>
-                  </div>
-                ),
-              )}
-              {activity && (
-                <div className="flex items-center gap-2 pl-12 text-sm text-accent">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                  {activity}…
-                </div>
-              )}
-              {final && !busy && (
-                <Link href="/perfil" className="ml-12 block rounded-2xl bg-accent px-5 py-4 text-center font-medium text-background">
-                  Ver mi perfil completo y recomendaciones →
-                </Link>
-              )}
-              <div ref={bottom} />
+              {view.mode.llm === "mock" && <span className="ml-auto rounded-full border border-border px-2 py-0.5 text-xs text-muted">Modo demo sin IA</span>}
             </div>
           </div>
-
-          {!final && (
-            <div className="border-t border-border bg-background px-4 pb-4 pt-3 lg:px-0">
-              <div className="mx-auto max-w-2xl space-y-3">
-                {choices && !busy && (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {choices.options.map((o) => (
-                      <button
-                        key={o}
-                        onClick={() => send({ message: o })}
-                        className="rounded-2xl border border-border bg-card px-4 py-2.5 text-left text-sm transition hover:border-accent hover:bg-accent-soft"
-                      >
-                        {o}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {voiceHint && input && <p className="text-xs text-muted">Revisá lo que entendí, corregilo si hace falta y tocá Enviar.</p>}
-                <div className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 focus-within:border-accent">
-                  <button
-                    type="button"
-                    onClick={recording ? stopRecording : startRecording}
-                    disabled={busy && !recording}
-                    aria-label={recording ? "Terminar de grabar" : "Hablar"}
-                    title={recording ? "Tocá para terminar" : "Hablar"}
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl disabled:opacity-50 ${recording ? "animate-pulse bg-red-500 text-white" : "text-accent hover:bg-accent-soft"}`}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      {recording ? (
-                        <rect x="7" y="7" width="10" height="10" rx="2" />
-                      ) : (
-                        <>
-                          <rect x="9" y="3" width="6" height="11" rx="3" />
-                          <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-                        </>
-                      )}
-                    </svg>
-                  </button>
-                  <textarea
-                    ref={textInput}
-                    rows={1}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        submit();
-                      }
-                    }}
-                    readOnly={recording}
-                    placeholder={recording ? "Te escucho…" : "Escribí o hablá…"}
-                    className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-[15px] outline-none"
-                  />
-                  <button
-                    onClick={submit}
-                    disabled={busy || recording || !input.trim()}
-                    aria-label="Enviar"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-background disabled:opacity-40"
-                  >
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M5 12h14M13 6l6 6-6 6" />
-                    </svg>
-                  </button>
-                </div>
-                <button
-                  onClick={() => {
-                    stopSpeaking();
-                    setLive(true);
-                  }}
-                  disabled={busy || recording}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-accent/40 bg-accent-soft/60 py-2.5 text-sm font-medium text-accent transition hover:bg-accent-soft disabled:opacity-50"
-                >
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                  Hablar en vivo con Rumbo
-                </button>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                  <button onClick={toggleVoice} aria-pressed={voiceReplies} className={voiceReplies ? "font-medium text-accent" : "hover:text-foreground"}>
-                    {voiceReplies ? "Respuestas en voz: activadas" : "Escuchar respuestas en voz"}
-                  </button>
-                  <button disabled={busy} onClick={() => setShowImport((v) => !v)} className="hover:text-foreground disabled:opacity-60">
-                    Sumar CV, LinkedIn o GitHub
-                  </button>
-                  {profile.questionCount >= MIN_QUESTIONS && (
-                    <button disabled={busy} onClick={() => send({ message: "Quiero ver mis resultados ya.", wantsResults: true })} className="ml-auto font-medium text-accent disabled:opacity-60">
-                      Ver mis resultados →
-                    </button>
-                  )}
-                </div>
-                {showImport && !busy && (
-                  <div className="space-y-3 rounded-2xl border border-border bg-card p-4 text-sm">
-                    <p className="text-muted">Con tus datos el agente te conoce más rápido. Solo guardamos lo que extrae la IA, nunca el archivo.</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        ref={fileInput}
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) importFrom("cv", f);
-                          e.target.value = "";
-                        }}
-                      />
-                      <button onClick={() => fileInput.current?.click()} className="rounded-full border border-accent px-4 py-1.5 text-accent hover:bg-accent-soft">
-                        Subir CV o LinkedIn (PDF)
-                      </button>
-                      <span className="text-xs text-muted">En LinkedIn: tu perfil → Más → Guardar como PDF</span>
-                    </div>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (github.trim()) importFrom("github", github.trim());
-                      }}
-                      className="flex gap-2"
-                    >
-                      <input
-                        value={github}
-                        onChange={(e) => setGithub(e.target.value)}
-                        placeholder="Tu usuario de GitHub"
-                        className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 outline-none focus:border-accent"
-                      />
-                      <button className="rounded-xl border border-accent px-4 text-accent hover:bg-accent-soft">Conectar</button>
-                    </form>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {live && <LiveVoice onClose={closeLive} />}
-        <aside className="hidden min-h-0 overflow-y-auto py-6 lg:block">
-          <div className="rounded-3xl border border-border bg-card p-5">{panel}</div>
-        </aside>
+        )}
       </div>
+
+      <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border py-6 pl-6 lg:block">
+        <Panel view={view} onCorrect={correct} />
+      </aside>
     </div>
   );
 }
 
-function Avatar() {
-  return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-background">R</div>;
+function Stages({ view, onPanel, panelCount }: { view: View; onPanel: () => void; panelCount: number }) {
+  return (
+    <div className="border-b border-border py-3">
+      <ol className="flex items-center gap-1 text-xs sm:text-sm" aria-label="Etapas">
+        {view.stages.map((st, i) => (
+          <li key={st} className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className={`truncate ${i === view.stageIndex ? "font-semibold text-accent" : i < view.stageIndex ? "text-foreground" : "text-muted"}`}>{st}</span>
+            <span className={`h-1 rounded-full ${i <= view.stageIndex ? "bg-accent" : "bg-accent-soft"}`} />
+          </li>
+        ))}
+      </ol>
+      <button onClick={onPanel} className="mt-2 text-sm text-accent underline-offset-4 hover:underline lg:hidden">
+        Lo que voy entendiendo ({panelCount})
+      </button>
+    </div>
+  );
 }
 
-function Dots() {
+const STATUS_LABEL = { CONFIRMED: "Confirmado", PENDING: "En duda", REJECTED: "No es así" } as const;
+
+export function Panel({ view, onCorrect }: { view: View; onCorrect: (id: string, status: "REJECTED" | "CONFIRMED") => void }) {
+  const items = [...view.panel].reverse();
   return (
-    <span className="ml-1 inline-flex gap-1 align-middle">
-      {[0, 150, 300].map((d) => (
-        <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" style={{ animationDelay: `${d}ms` }} />
-      ))}
-    </span>
+    <div>
+      <h2 className="font-semibold">Lo que voy entendiendo</h2>
+      <p className="mt-1 text-xs text-muted">Son hipótesis a partir de lo que contaste. Si algo no te representa, marcalo y lo dejo de usar.</p>
+      {items.length === 0 && <p className="mt-4 text-sm text-muted">Todavía nada. Contame algo y lo vas a ver acá.</p>}
+      <ul className="mt-4 space-y-3">
+        {items.map((it) => (
+          <li key={it.id} className={`rounded-xl border p-3 text-sm ${it.status === "REJECTED" ? "border-dashed border-border opacity-60" : "border-border"}`}>
+            <div className="flex items-start justify-between gap-2">
+              <span className={`font-medium ${it.status === "REJECTED" ? "line-through" : ""}`}>{it.label}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] ${it.status === "CONFIRMED" ? "bg-accent text-background" : "bg-accent-soft text-accent"}`}>
+                {it.kind === "HYPOTHESIS" && it.status === "PENDING" ? "Hipótesis" : STATUS_LABEL[it.status]}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted">“{it.quote}”</p>
+            {it.status !== "REJECTED" && (
+              <div className="mt-2 flex gap-3 text-xs">
+                <button onClick={() => onCorrect(it.id, "REJECTED")} className="text-muted underline-offset-4 hover:text-foreground hover:underline">
+                  No es así
+                </button>
+                {it.status === "PENDING" && (
+                  <button onClick={() => onCorrect(it.id, "CONFIRMED")} className="text-accent underline-offset-4 hover:underline">
+                    Sí, es así
+                  </button>
+                )}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Onboarding({ onStart }: { onStart: (v: View) => void }) {
+  const [age, setAge] = useState<(typeof AGE_OPTIONS)[number]["value"] | "">("");
+  const [consent, setConsent] = useState(false);
+  const [guardian, setGuardian] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const minor = age === "A14_15" || age === "A16_17";
+
+  const start = async () => {
+    setBusy(true);
+    setError("");
+    const r = await call("/api/session", { body: { ageRange: age, consent: true, guardianConsent: guardian } });
+    setBusy(false);
+    if (r.view) onStart(r.view);
+    else setError(r.error ?? "No pude empezar.");
+  };
+
+  return (
+    <div className="mx-auto max-w-xl px-4 py-12">
+      <p className="text-xs font-semibold uppercase tracking-widest text-accent">Conectate con tu futuro</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">No hace falta que tengas todo claro. Vamos a explorar juntos.</h1>
+      <div className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-5 text-sm leading-relaxed">
+        <p>
+          <b>Qué es:</b> una charla con una IA que te hace preguntas para entender qué te gusta, qué te importa y qué tenés que tener en cuenta. Lleva entre
+          15 y 25 minutos. Al final ves lo que entendió y, si querés, caminos para investigar.
+        </p>
+        <p>
+          <b>Qué no es:</b> no es un test, no decide por vos y no reemplaza a un orientador o a un psicólogo.
+        </p>
+        <p>
+          <b>Tus datos:</b> no te pedimos nombre, email, teléfono ni liceo (si los escribís, los tapamos). Guardamos la charla y lo que entendimos durante
+          30 días para que puedas volver; después se borra solo. Podés borrarlo vos en cualquier momento.
+        </p>
+      </div>
+
+      <fieldset className="mt-6">
+        <legend className="text-sm font-medium">¿Qué edad tenés?</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {AGE_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => setAge(o.value)}
+              aria-pressed={age === o.value}
+              className={`rounded-full border px-4 py-1.5 text-sm ${age === o.value ? "border-accent bg-accent text-background" : "border-border bg-card"}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {minor && (
+        <label className="mt-4 flex gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+          <input type="checkbox" checked={guardian} onChange={(e) => setGuardian(e.target.checked)} className="mt-1" />
+          <span>Un adulto responsable (madre, padre o tutor) sabe que uso esta herramienta y está de acuerdo.</span>
+        </label>
+      )}
+
+      <label className="mt-4 flex gap-3 text-sm">
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+        <span>Entiendo qué es la herramienta y acepto que se guarde la charla por 30 días.</span>
+      </label>
+
+      <button
+        onClick={start}
+        disabled={!age || !consent || (minor && !guardian) || busy}
+        className="mt-6 w-full rounded-xl bg-accent py-3 font-medium text-background disabled:opacity-50"
+      >
+        {busy ? "Empezando…" : "Empezar a explorar"}
+      </button>
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    </div>
   );
 }

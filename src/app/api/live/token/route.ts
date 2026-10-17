@@ -36,6 +36,6 @@ export async function POST() {
     token: token.name,
     model: LIVE_MODEL,
     systemInstruction: liveInstruction(summary),
-    tools: [...mcp.declarations, ...LOCAL_TOOLS.filter((t) => t.name !== "offer_choices")],
+    tools: [...mcp.declarations, ...LOCAL_TOOLS.filter((t) => t.name !== "offer_choices" && t.name !== "share_insight")],
   });
 }

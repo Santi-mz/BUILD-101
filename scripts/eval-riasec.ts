@@ -21,6 +21,7 @@ const PERSONAS = [
   { expected: "E", who: "Camila, 22 años, Maldonado. Revende ropa por Instagram, organizó la fiesta de egresados y lidera el grupo en todo. Le motivan las ventas, negociar y la plata; se aburre con tareas repetitivas." },
 ];
 const MAX_TURNS = 16;
+const VERBOSE = process.env.VERBOSE === "1";
 
 /** Cliente Supabase mínimo: `profiles` en memoria y el resto contra Supabase real (lectura). */
 function memorySupabase(real: SupabaseClient) {
@@ -71,14 +72,19 @@ async function runPersona(p: (typeof PERSONAS)[number], real: SupabaseClient) {
         options = e.options;
       }
       if (e.type === "tool") tools[e.name] = (tools[e.name] ?? 0) + 1;
+      if (e.type === "insight" && VERBOSE) console.log(`   💡 [${e.kind}] ${e.title} — ${e.body}`);
+      if (e.type === "choices" && VERBOSE) console.log(`   ▸ opciones: ${e.options.join(" | ")}`);
       if (e.type === "error") errors.push(e.message);
     };
     await runAgent({ history, userId: "eval", supabase: mem.client, emit, trail });
     const row = mem.get()!;
+    if (VERBOSE) console.log(`RUMBO: ${said.trim()}`);
     if (row.status === "final") break;
 
     const answer = await simulateUser(p.who, said, options);
     history.push({ role: "user", parts: [{ text: answer }] });
+    if (VERBOSE) console.log(`
+PERSONA: ${answer}`);
     row.question_count += 1;
     const stop = shouldStop(row.data?.riasec ? row.data : null, row.question_count);
     if (stop) {

@@ -1,122 +1,44 @@
-import type { Content } from "@google/genai";
-import { runAgent, type AgentEvent } from "@/lib/agent/run";
-import { profileSnapshot, shouldStop, type ProfileData } from "@/lib/profile";
-import { supabaseServer } from "@/lib/supabase/server";
+import { z } from "zod";
+import { body, fail, withSession } from "@/lib/api";
+import { llm } from "@/lib/llm/provider";
+import { runTurn } from "@/lib/engine/turn";
+import { feedProfile, publicView } from "@/lib/session";
+import { hasSupabase, supabaseServer } from "@/lib/supabase/server";
+import type { SessionState } from "@/lib/engine/types";
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
-type Msg = Content;
-const userText = (text: string): Msg => ({ role: "user", parts: [{ text }] });
+const Turn = z.object({ message: z.string().max(2000).optional(), close: z.boolean().optional() });
 
+/** Un turno de la Parte 1 (A0 + analizador + planificador + entrevistador). */
 export async function POST(req: Request) {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new Response("No autorizado", { status: 401 });
-
-  const { message, wantsResults } = (await req.json()) as { message?: string; wantsResults?: boolean };
-
-  const [{ data: conv }, { data: prof }] = await Promise.all([
-    supabase.from("conversations").select("messages").eq("user_id", user.id).maybeSingle(),
-    supabase.from("profiles").select("data,status,question_count").eq("user_id", user.id).maybeSingle(),
-  ]);
-  const history: Msg[] = (conv?.messages as Msg[]) ?? [];
-  const isStart = history.length === 0;
-  let questionCount = prof?.question_count ?? 0;
-
-  if (isStart) {
-    history.push(userText("Hola, quiero empezar mi orientación vocacional."));
-  } else {
-    if (!message?.trim()) return new Response("Mensaje vacío", { status: 400 });
-    history.push(userText(message.trim().slice(0, 2000)));
-    questionCount += 1;
-  }
-
-  // Condición de parada: la decide el servidor, no el modelo.
-  const stop = wantsResults ? "user" : shouldStop(prof?.data as ProfileData | null, questionCount);
-  if (stop && prof?.status !== "final") {
-    const why = {
-      user: "el usuario pidió ver sus resultados",
-      confidence: "todas las dimensiones superaron el umbral de confianza y el top 3 se mantuvo estable",
-      max_questions: "se llegó al máximo de preguntas",
-    }[stop];
-    // Gemini no tiene mensajes de sistema a mitad de conversación: va como nota marcada dentro del turno del usuario.
-    history.push(
-      userText(
-        `[Mensaje del sistema, no del usuario] El perfil está listo para cerrar (${why}). No hagas más preguntas: buscá opciones reales con web_search, llamá a finalize_profile y escribí el cierre.`,
-      ),
-    );
-  }
-
-  await supabase
-    .from("profiles")
-    .upsert({ user_id: user.id, data: prof?.data ?? {}, status: prof?.status ?? "in_progress", question_count: questionCount });
-
-  const encoder = new TextEncoder();
-  const body = new ReadableStream({
-    async start(controller) {
-      const emit = (e: AgentEvent | Record<string, unknown>) => controller.enqueue(encoder.encode(JSON.stringify(e) + "\n"));
-      const trail: string[] = [];
-      await runAgent({ history, userId: user.id, supabase, emit, trail });
-      if (trail.length) {
-        // Recorrido del agente por el grafo de carreras: se guarda para dibujarlo en /perfil.
-        const { data: cur } = await supabase.from("profiles").select("data").eq("user_id", user.id).maybeSingle();
-        const d = (cur?.data ?? {}) as ProfileData;
-        const merged = [...new Set([...(d.graph_trail ?? []), ...trail])].slice(-40);
-        await supabase.from("profiles").update({ data: { ...d, graph_trail: merged } }).eq("user_id", user.id);
-      }
-
-      await supabase.from("conversations").upsert({ user_id: user.id, messages: history, updated_at: new Date().toISOString() });
-      const { data: after } = await supabase
-        .from("profiles")
-        .select("data,status,question_count")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const p = after?.data as ProfileData | null;
-      emit({ type: "profile", ...profileSnapshot(p, after?.status, after?.question_count ?? questionCount) });
-      controller.close();
-    },
+  const input = await body(req, Turn);
+  if (input instanceof Response) return input;
+  const text = input.message?.trim() || (input.close ? "Quiero terminar y ver lo que entendiste." : "");
+  if (!text) return fail(400, "empty", "Mensaje vacío.");
+  return withSession(async (s) => {
+    const provider = llm();
+    const out = await runTurn(provider, s, text, { forceClose: input.close });
+    s.model = provider.model;
+    if (s.status === "COMPLETED" && out.action.type === "CLOSE") await syncFeedProfile(s);
+    return Response.json({ ...publicView(s), reply: out.reply, safety: out.safety });
   });
-
-  return new Response(body, { headers: { "Content-Type": "application/x-ndjson; charset=utf-8" } });
 }
 
-/** Historial visible para la UI (solo texto de usuario y asistente). */
-export async function GET() {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new Response("No autorizado", { status: 401 });
-  const [{ data: conv }, { data: prof }] = await Promise.all([
-    supabase.from("conversations").select("messages").eq("user_id", user.id).maybeSingle(),
-    supabase.from("profiles").select("data,status,question_count").eq("user_id", user.id).maybeSingle(),
-  ]);
-  const visible: { role: "user" | "assistant"; text: string }[] = [];
-  let lastChoices: { question: string; options: string[] } | null = null;
-  for (const m of ((conv?.messages as Msg[]) ?? []).slice(1)) {
-    for (const part of m.parts ?? []) {
-      if (part.text?.startsWith("[Datos importados")) {
-        const what = part.text.includes("GitHub") ? "tu perfil de GitHub" : "tu CV / LinkedIn";
-        visible.push({ role: "user", text: `Compartí ${what}.` });
-        continue;
-      }
-      if (part.text && !part.thought && !part.text.startsWith("[Mensaje del sistema")) {
-        if (m.role === "user") lastChoices = null;
-        visible.push({ role: m.role === "model" ? "assistant" : "user", text: part.text });
-      }
-      if (part.functionCall?.name === "offer_choices") {
-        lastChoices = part.functionCall.args as { question: string; options: string[] };
-        visible.push({ role: "assistant", text: lastChoices.question });
-      }
-    }
+/** Si la persona entró con cuenta, el perfil cerrado ordena su feed de noticias. */
+async function syncFeedProfile(s: SessionState) {
+  if (!hasSupabase() || !s.userId) return;
+  try {
+    const supabase = await supabaseServer();
+    const { data: prev } = await supabase.from("profiles").select("data").eq("user_id", s.userId).maybeSingle();
+    await supabase.from("profiles").upsert({
+      user_id: s.userId,
+      data: { strengths: [], values: [], constraints: {}, evidence: [], ...(prev?.data ?? {}), ...feedProfile(s) },
+      status: "final",
+      question_count: s.userTurns,
+      updated_at: new Date().toISOString(),
+    });
+  } catch {
+    // El feed es opcional: si falla, la sesión sigue igual.
   }
-  const p = prof?.data as ProfileData | null;
-  return Response.json({
-    messages: visible,
-    choices: lastChoices,
-    profile: profileSnapshot(p, prof?.status, prof?.question_count ?? 0),
-    isAnonymous: Boolean(user.is_anonymous),
-  });
 }

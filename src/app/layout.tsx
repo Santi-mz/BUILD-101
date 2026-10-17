@@ -10,8 +10,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Rumbo · Orientación vocacional con IA",
-  description: "Un agente que te entrevista, se respalda en evidencia de PubMed y te arma un perfil vocacional con oportunidades reales.",
+  title: "Conectate con tu futuro · Exploración vocacional con IA",
+  description: "No elegimos tu futuro por vos. Te ayudamos a descubrir caminos, contrastarlos con información confiable y conversar con personas que los conocen.",
 };
 
 async function NavLinks() {
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-border py-6 text-center text-xs text-muted">
-          Rumbo no reemplaza a un profesional de la orientación. Evidencia: PubMed (NCBI). Hecho en Build 101 · Montevideo.
+          Rumbo es una herramienta de exploración: no es un test ni reemplaza a un profesional de la orientación. Si estás pasando un momento difícil: Línea Vida 0800 0767 o *0767 (24 h). Hecho en Build 101 · Montevideo.
         </footer>
       </body>
     </html>
