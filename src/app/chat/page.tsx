@@ -1,21 +1,9 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
+import type { Metadata } from "next";
 import Chat from "./chat";
 
-async function ChatPageInner() {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  return <Chat />;
-}
+export const metadata: Metadata = { title: "Charla · Conectate con tu futuro" };
 
+// Sin login: la sesión es anónima (cookie con id aleatorio). La cuenta es opcional y solo ordena el feed.
 export default function ChatPage() {
-  return (
-    <Suspense fallback={<p className="p-10 text-center text-sm text-muted">Cargando…</p>}>
-      <ChatPageInner />
-    </Suspense>
-  );
+  return <Chat />;
 }

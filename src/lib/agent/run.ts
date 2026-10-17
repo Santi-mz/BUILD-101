@@ -7,7 +7,7 @@ import { SYSTEM_PROMPT } from "./prompt";
 
 // Modelos con plan gratis de la Gemini API (Google AI Studio), en orden de preferencia.
 // Si uno está saturado (503) o al límite (429), se prueba el siguiente.
-export const MODELS = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-flash-lite-latest"];
+export const MODELS = [...new Set([process.env.LLM_MODEL, "gemini-flash-latest", "gemini-3.7-flash", "gemini-flash-lite-latest"].filter(Boolean) as string[])];
 const MAX_STEPS = 12;
 
 // En Vercel la clave quedó cargada como "keyvercel"; se acepta ese nombre hasta renombrarla a GEMINI_API_KEY.

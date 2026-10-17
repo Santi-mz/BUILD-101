@@ -3,8 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Sin Supabase configurado (modo demo local) se usa una URL inalcanzable: getUser devuelve null y las consultas fallan sin romper la página.
+export const hasSupabase = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:1";
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "demo-sin-supabase";
 
 /** Cliente con la sesión del usuario (respeta RLS). */
 export async function supabaseServer() {

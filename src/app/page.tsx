@@ -1,34 +1,34 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { getFeed } from "@/lib/feed";
-import { MAX_QUESTIONS, RIASEC_KEYS, RIASEC_LABELS, riasecCode, type ProfileData, type RiasecKey } from "@/lib/profile";
+import { RIASEC_KEYS, RIASEC_LABELS, riasecCode, type ProfileData, type RiasecKey } from "@/lib/profile";
 import { supabaseServer } from "@/lib/supabase/server";
 
 const STEPS = [
-  { n: "1", title: "Charlás con el agente", body: "Te hace preguntas que se adaptan a cada respuesta. Nada de cuestionarios eternos." },
-  { n: "2", title: "El agente consulta la ciencia", body: "Busca en PubMed estudios de psicología vocacional que fundamenten sus inferencias principales." },
-  { n: "3", title: "Recibís tu perfil", body: "Tu código RIASEC con carreras, cursos, pasantías y empleos reales, y un feed hecho para vos." },
+  { n: "1", title: "Charlás y te conocés", body: "Una pregunta por vez, de lo general a lo concreto. Ves lo que la IA va entendiendo y corregís lo que no te represente." },
+  { n: "2", title: "Recibís tu devolución", body: "Lo que más aparece en lo que contaste, tus intereses concretos y lo que te importa. No es un test ni una etiqueta." },
+  { n: "3", title: "Explorás caminos", body: "Hasta tres rutas distintas, con por qué aparecen, qué falta verificar y un próximo paso chico y reversible." },
 ];
 
 const AI_PILLARS: { title: string; body: string; icon: ReactNode }[] = [
   {
     title: "Entrevista adaptativa",
-    body: "Cada pregunta depende de lo que respondiste antes. El agente va afinando hipótesis y el servidor corta la charla cuando el perfil es estable.",
+    body: "Un analizador convierte cada respuesta en evidencias según una rúbrica científica fija; un planificador decide la próxima pregunta y un entrevistador la redacta con tacto.",
     icon: <path d="M4 5h16v10H8l-4 4V5Z" />,
   },
   {
-    title: "Evidencia científica",
-    body: "Un servidor MCP propio busca en PubMed estudios sobre intereses vocacionales y ajuste persona-carrera ligados a lo que infiere. Los ves en tu perfil, con su PMID, para leerlos vos.",
+    title: "Criterio con base científica",
+    body: "La rúbrica combina Gati (dificultades para decidir), Prediger (personas/cosas, datos/ideas), Holland (RIASEC), intereses básicos y SCCT. El criterio es el mismo para todos y está versionado.",
     icon: <path d="M10 3v6L4.5 18.5A1.5 1.5 0 0 0 5.8 21h12.4a1.5 1.5 0 0 0 1.3-2.5L14 9V3M8.5 3h7M7 15h10" />,
   },
   {
-    title: "Perfil RIASEC",
-    body: "Puntúa los seis tipos de Holland con su nivel de confianza y los traduce en recomendaciones concretas, no en una etiqueta.",
+    title: "Vos tenés la última palabra",
+    body: "Nada entra a tu perfil sin evidencia: se separa lo que dijiste, lo que la IA supone y lo que confirmaste. Los porcentajes los calcula código, no la IA, y solo con datos suficientes.",
     icon: <path d="M12 3 21 8v8l-9 5-9-5V8l9-5Zm0 0v18M3 8l9 5 9-5" />,
   },
   {
-    title: "Noticias personalizadas",
-    body: "La IA resume y etiqueta cada noticia por tipo RIASEC. Con tu perfil, el feed se ordena por afinidad con vos.",
+    title: "Agentes que verifican",
+    body: "Al explorar caminos, un agente busca, otro verifica la fuente y otro elige hasta tres rutas diversas. Lo que no tiene fuente no se muestra como disponible.",
     icon: <path d="M4 6h16M4 12h10M4 18h6M17 14l3 3-3 3" />,
   },
 ];
@@ -47,11 +47,10 @@ async function loadViewer() {
   return { supabase, user, profile };
 }
 
-async function HeroCta() {
-  const { user, profile } = await loadViewer();
+function HeroCta() {
   return (
-    <Link href={user ? "/chat" : "/login"} className={CTA_CLASS}>
-      {profile?.riasec ? "Seguir mi charla" : "Armá tu perfil"}
+    <Link href="/chat" className={CTA_CLASS}>
+      Empezar a explorar
       <span aria-hidden>→</span>
     </Link>
   );
@@ -79,34 +78,26 @@ export default function Home() {
           <div>
             <p className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-accent">
               <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-              <span className="sm:hidden">Orientación vocacional con IA</span>
-              <span className="hidden sm:inline">Orientación vocacional con IA y evidencia científica</span>
+              <span className="sm:hidden">Conectate con tu futuro</span>
+              <span className="hidden sm:inline">Conectate con tu futuro · exploración vocacional con IA</span>
             </p>
             <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-6xl">
-              Descubrí qué estudiar o dónde trabajar, <span className="text-accent">en una charla.</span>
+              No elegimos tu futuro por vos. <span className="text-accent">Te ayudamos a explorarlo.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg text-muted">
-              Un agente te entrevista, fundamenta sus inferencias principales con estudios de PubMed y te arma un perfil con carreras, cursos,
-              pasantías y empleos reales en Uruguay.
+              Una charla para descubrir qué te gusta y qué te importa, contrastar caminos con información confiable y acercarte a personas que
+              los conocen. No hace falta que tengas todo claro.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Suspense
-                fallback={
-                  <span className={CTA_CLASS}>
-                    Armá tu perfil<span aria-hidden>→</span>
-                  </span>
-                }
-              >
-                <HeroCta />
-              </Suspense>
+              <HeroCta />
               <a href="#feed" className="rounded-full border border-border bg-card px-6 py-3.5 font-medium transition hover:border-accent">
                 Ver noticias
               </a>
             </div>
             <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
-              <li><span aria-hidden>✓ </span>Hasta {MAX_QUESTIONS} preguntas</li>
-              <li><span aria-hidden>✓ </span>Estudios de PubMed citados</li>
-              <li><span aria-hidden>✓ </span>Modelo RIASEC de Holland</li>
+              <li><span aria-hidden>✓ </span>15 a 25 minutos</li>
+              <li><span aria-hidden>✓ </span>Sin cuenta ni datos personales</li>
+              <li><span aria-hidden>✓ </span>Corregís lo que entienda</li>
             </ul>
 
             <div className="mt-8 rounded-2xl border border-border bg-card/80 p-4 shadow-sm lg:hidden">
@@ -133,9 +124,9 @@ export default function Home() {
               ))}
             </div>
             <ul className="mt-5 space-y-3 border-t border-border pt-5 text-sm">
-              <li className="flex gap-2"><span aria-hidden className="text-accent">●</span>Tu código de tres letras con nivel de confianza</li>
-              <li className="flex gap-2"><span aria-hidden className="text-accent">●</span>Estudios de PubMed relacionados, con su PMID</li>
-              <li className="flex gap-2"><span aria-hidden className="text-accent">●</span>Carreras, cursos, pasantías y empleos para vos</li>
+              <li className="flex gap-2"><span aria-hidden className="text-accent">●</span>El peso de cada área en lo que contaste, con su confianza</li>
+              <li className="flex gap-2"><span aria-hidden className="text-accent">●</span>Cada dato con la frase tuya que lo sostiene</li>
+              <li className="flex gap-2"><span aria-hidden className="text-accent">●</span>Hasta tres caminos para investigar, con su fuente</li>
             </ul>
           </div>
         </div>
@@ -143,7 +134,7 @@ export default function Home() {
 
       <div className="mx-auto max-w-5xl px-4">
         <section className="pb-16 sm:pb-24">
-          <SectionTitle eyebrow="Cómo funciona" title="De una charla a un plan concreto, en tres pasos" />
+          <SectionTitle eyebrow="Cómo funciona" title="De una charla a un próximo paso, en tres etapas" />
           <ol className="grid gap-4 sm:grid-cols-3">
             {STEPS.map((s) => (
               <li key={s.n} className="rounded-2xl border border-border bg-card p-6">
@@ -158,9 +149,9 @@ export default function Home() {
         </section>
 
         <section className="pb-16 sm:pb-24">
-          <SectionTitle eyebrow="Por qué la IA es clave" title="La IA no decora Rumbo: es el producto">
-            Un cuestionario tradicional hace las mismas preguntas. Rumbo adapta la conversación a tus respuestas, relaciona lo que contás con
-            investigación publicada y lo convierte en oportunidades.
+          <SectionTitle eyebrow="Por qué la IA es clave" title="La IA lee y redacta; el criterio no depende de su humor">
+            Los modelos de lenguaje analizan tus respuestas y escriben las preguntas. Todo lo que decide (tu perfil, los porcentajes, qué
+            preguntar después, cuándo cerrar) es código determinista que se puede auditar y testear.
           </SectionTitle>
           <div className="grid gap-4 sm:grid-cols-2">
             {AI_PILLARS.map((p) => (
@@ -178,9 +169,9 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-6 text-xs text-muted">
-            Basado en el modelo de intereses vocacionales de Holland (RIASEC), uno de los más estudiados en psicología vocacional. Los
-            estudios citados describen patrones generales, no validan tu perfil individual. No es un diagnóstico clínico: es un punto de
-            partida para decidir mejor.
+            Los marcos teóricos organizan la exploración: una conversación con IA no es un test psicométrico validado. No es un diagnóstico ni
+            reemplaza a un orientador o psicólogo. Que la conversación ayude más que un cuestionario fijo es una hipótesis que todavía hay que
+            validar.
           </p>
         </section>
 
