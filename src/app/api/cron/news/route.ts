@@ -1,6 +1,5 @@
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { MODEL, anthropicClient } from "@/lib/agent/run";
+import { genai, withRetry } from "@/lib/agent/run";
 import { NEWS_FEEDS, fetchFeed } from "@/lib/news-sources";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -30,25 +29,23 @@ export async function GET(req: Request) {
   const unique = [...new Map(raw.map((n) => [n.url, n])).values()];
   const { data: existing } = await db.from("news").select("url").in("url", unique.map((n) => n.url));
   const seen = new Set((existing ?? []).map((e) => e.url));
-  const fresh = unique.filter((n) => !seen.has(n.url)).slice(0, 40);
+  const fresh = unique.filter((n) => !seen.has(n.url)).slice(0, 20);
   if (fresh.length === 0) return Response.json({ inserted: 0 });
 
   // La IA resume, filtra y etiqueta cada noticia con pesos RIASEC: sin esto no hay feed personalizado.
-  const anthropic = anthropicClient();
-  const res = await anthropic.messages.parse({
-    model: MODEL,
-    max_tokens: 16000,
-    output_config: { effort: "low", format: zodOutputFormat(Tagged) },
-    system:
-      "Etiquetás noticias para una app de orientación vocacional en Uruguay. Para cada titular, decidí si es relevante, resumilo y asigná cuánto se relaciona con cada tipo RIASEC de Holland (0 a 1).",
-    messages: [
-      {
-        role: "user",
-        content: fresh.map((n, i) => `${i}. [${n.category}] ${n.title} (${n.source})`).join("\n"),
-      },
-    ],
-  });
-  const tagged = res.parsed_output?.items ?? [];
+  const res = await withRetry((model) => genai().models.generateContent({
+    model,
+    contents: fresh.map((n, i) => `${i}. [${n.category}] ${n.title} (${n.source})`).join("\n"),
+    config: {
+      systemInstruction:
+        "Etiquetás noticias para una app de orientación vocacional en Uruguay. Para cada titular, decidí si es relevante, resumilo y asigná cuánto se relaciona con cada tipo RIASEC de Holland (0 a 1).",
+      responseMimeType: "application/json",
+      responseJsonSchema: z.toJSONSchema(Tagged),
+    },
+  }));
+  const parsed = Tagged.safeParse(JSON.parse(res.text ?? "{}"));
+  if (!parsed.success) return Response.json({ error: "Respuesta de la IA con formato inválido" }, { status: 502 });
+  const tagged = parsed.data.items;
 
   const rows = tagged
     .filter((t) => t.relevant && fresh[t.index])
