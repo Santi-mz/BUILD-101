@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Opportunity } from "@/lib/opportunities";
 
 export const RIASEC_KEYS = ["R", "I", "A", "S", "E", "C"] as const;
 export type RiasecKey = (typeof RIASEC_KEYS)[number];
@@ -60,6 +61,7 @@ export const profileUpdateSchema = z.object({
 export type ProfileData = z.infer<typeof profileUpdateSchema> & {
   history?: string[][]; // top-3 RIASEC de cada actualización, para medir estabilidad
   recommendations?: Recommendation[];
+  opportunities?: Opportunity[]; // becas, pasantías, empleos y cursos reales y abiertos
   graph_trail?: string[]; // nodos del grafo de carreras que recorrió el agente
   imports?: { source: "cv" | "github"; summary: string; at: string }[]; // datos traídos de otras apps
 };

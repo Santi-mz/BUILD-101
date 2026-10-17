@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { searchPubmed } from "@/lib/pubmed";
 import { GRAPH_SOURCE, matchProfile, neighbors, search } from "@/lib/graph";
+import { findOpportunities, mergeOpportunities, Opportunity, OPPORTUNITY_KINDS, OPPORTUNITY_SCOPES } from "@/lib/opportunities";
 import { MIN_QUESTIONS, profileUpdateSchema, topThree, type ProfileData } from "@/lib/profile";
 
 // trail: nodos del grafo que el agente visitó en este turno (la ruta del chat los guarda en el perfil).
@@ -49,6 +50,28 @@ export function createRumboMcp(ctx: Ctx = {}) {
         .order("published_at", { ascending: false })
         .limit(8);
       return text(data ?? []);
+    },
+  );
+
+  // --- Oportunidades reales y abiertas: becas, pasantías, empleos y cursos (Uruguay o exterior) ---
+  server.registerTool(
+    "search_opportunities",
+    {
+      description:
+        "Busca oportunidades REALES y abiertas para la persona: becas, pasantías, empleos y cursos, en Uruguay (nacional) o en el exterior (internacional). Devuelve título, institución, URL verificada, fecha de cierre si figura y por qué le sirve. Usala en el cierre (al menos una vez nacional y una internacional) y cuando la persona pida oportunidades.",
+      inputSchema: {
+        profile: z.string().describe("Resumen breve de la persona: edad o etapa, intereses, código RIASEC, condiciones"),
+        keywords: z.array(z.string()).min(1).describe("Áreas o temas, ej: ['biología', 'salud']"),
+        kinds: z.array(z.enum(OPPORTUNITY_KINDS)).min(1),
+        scope: z.enum(OPPORTUNITY_SCOPES),
+      },
+    },
+    async ({ profile, keywords, kinds, scope }) => {
+      const news = ctx.supabase
+        ? ((await ctx.supabase.from("news").select("title,url,category").in("category", ["pasantias", "empleo", "becas"]).order("published_at", { ascending: false }).limit(25)).data ?? [])
+        : [];
+      const found = await findOpportunities({ profile, keywords, kinds, scope, news });
+      return text(found.length ? found : "No encontré convocatorias abiertas con esos criterios. Probá con otras palabras clave o el otro alcance.");
     },
   );
 
@@ -158,9 +181,13 @@ export function createRumboMcp(ctx: Ctx = {}) {
           )
           .min(3)
           .max(10),
+        opportunities: z
+          .array(Opportunity)
+          .optional()
+          .describe("Oportunidades reales devueltas por search_opportunities (becas, pasantías, empleos, cursos), copiadas tal cual"),
       },
     },
-    async ({ recommendations }) => {
+    async ({ recommendations, opportunities }) => {
       const prev = await load();
       // Reglas duras (el prompt las pide, pero el modelo a veces se adelanta).
       const answers = prev?.question_count ?? 0;
@@ -172,7 +199,11 @@ export function createRumboMcp(ctx: Ctx = {}) {
       const { error } = await supabase
         .from("profiles")
         .update({
-          data: { ...(prev?.data ?? {}), recommendations },
+          data: {
+            ...(prev?.data ?? {}),
+            recommendations,
+            opportunities: mergeOpportunities((prev?.data as ProfileData | undefined)?.opportunities, opportunities ?? []),
+          },
           status: "final",
           updated_at: new Date().toISOString(),
         })

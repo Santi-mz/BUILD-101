@@ -7,7 +7,11 @@ import { SYSTEM_PROMPT } from "./prompt";
 
 // Modelos con plan gratis de la Gemini API (Google AI Studio), en orden de preferencia.
 // Si uno está saturado (503) o al límite (429), se prueba el siguiente.
-export const MODELS = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-flash-lite-latest"];
+export const MODELS = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-lite-latest"];
+
+// Modelos que agotaron su cuota diaria gratis: se saltean por un rato para no perder tiempo reintentando.
+const exhaustedUntil = new Map<string, number>();
+const isDailyQuota = (err: unknown) => err instanceof ApiError && err.status === 429 && /PerDay|per day|quota/i.test(err.message);
 const MAX_STEPS = 12;
 
 // En Vercel la clave quedó cargada como "keyvercel"; se acepta ese nombre hasta renombrarla a GEMINI_API_KEY.
@@ -16,12 +20,18 @@ export const genai = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY 
 /** Corre `fn` con cada modelo de MODELS (dos intentos por modelo) hasta que uno responda. */
 export async function withRetry<T>(fn: (model: string) => Promise<T>): Promise<T> {
   let last: unknown;
-  for (const model of MODELS) {
+  const now = Date.now();
+  const available = MODELS.filter((m) => (exhaustedUntil.get(m) ?? 0) < now);
+  for (const model of available.length ? available : MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         return await fn(model);
       } catch (err) {
         last = err;
+        if (isDailyQuota(err)) {
+          exhaustedUntil.set(model, Date.now() + 30 * 60_000);
+          break; // cuota del día agotada: pasar directo al siguiente modelo
+        }
         if (!(err instanceof ApiError && (err.status === 503 || err.status === 429))) throw err;
         await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
       }
@@ -77,6 +87,18 @@ export const LOCAL_TOOLS: FunctionDeclaration[] = [
 
 /** Búsqueda web con grounding de Google en una llamada aparte (no se mezcla con las funciones). */
 export async function webSearch(ai: GoogleGenAI, query: string) {
+  try {
+    return await groundedWebSearch(ai, query);
+  } catch {
+    return {
+      summary: "",
+      sources: [],
+      note: "La búsqueda en Google no está disponible ahora (cuota gratis agotada). Usá search_opportunities (lee fuentes oficiales) y search_news para traer opciones reales con link.",
+    };
+  }
+}
+
+async function groundedWebSearch(ai: GoogleGenAI, query: string) {
   const res = await withRetry((model) => ai.models.generateContent({
     model,
     contents: `Buscá y resumí en viñetas opciones concretas y vigentes para: ${query}. Incluí nombre de la institución y la URL de cada una.`,
