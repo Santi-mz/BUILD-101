@@ -5,11 +5,30 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createRumboMcp } from "@/lib/mcp/server";
 import { SYSTEM_PROMPT } from "./prompt";
 
-// Modelo con plan gratis de la Gemini API (Google AI Studio).
-export const MODEL = "gemini-flash-latest";
+// Modelos con plan gratis de la Gemini API (Google AI Studio), en orden de preferencia.
+// Si uno está saturado (503) o al límite (429), se prueba el siguiente.
+export const MODELS = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-flash-lite-latest"];
 const MAX_STEPS = 12;
 
-export const genai = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// En Vercel la clave quedó cargada como "keyvercel"; se acepta ese nombre hasta renombrarla a GEMINI_API_KEY.
+export const genai = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? process.env.keyvercel });
+
+/** Corre `fn` con cada modelo de MODELS (dos intentos por modelo) hasta que uno responda. */
+export async function withRetry<T>(fn: (model: string) => Promise<T>): Promise<T> {
+  let last: unknown;
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await fn(model);
+      } catch (err) {
+        last = err;
+        if (!(err instanceof ApiError && (err.status === 503 || err.status === 429))) throw err;
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+  }
+  throw last;
+}
 
 export type AgentEvent =
   | { type: "text"; delta: string }
@@ -55,11 +74,11 @@ const LOCAL_TOOLS: FunctionDeclaration[] = [
 
 /** Búsqueda web con grounding de Google en una llamada aparte (no se mezcla con las funciones). */
 async function webSearch(ai: GoogleGenAI, query: string) {
-  const res = await ai.models.generateContent({
-    model: MODEL,
+  const res = await withRetry((model) => ai.models.generateContent({
+    model,
     contents: `Buscá y resumí en viñetas opciones concretas y vigentes para: ${query}. Incluí nombre de la institución y la URL de cada una.`,
     config: { tools: [{ googleSearch: {} }] },
-  });
+  }));
   const sources = (res.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [])
     .map((c) => c.web)
     .filter((w) => w?.uri)
@@ -98,14 +117,14 @@ export async function runAgent(opts: {
 
   try {
     for (let step = 0; step < MAX_STEPS; step++) {
-      const res = await ai.models.generateContent({
-        model: MODEL,
+      const res = await withRetry((model) => ai.models.generateContent({
+        model,
         contents: history,
         config: {
           systemInstruction: SYSTEM_PROMPT,
           tools: [{ functionDeclarations: [...mcp.declarations, ...LOCAL_TOOLS] }],
         },
-      });
+      }));
 
       const content = res.candidates?.[0]?.content;
       if (!content?.parts?.length) {
@@ -153,8 +172,8 @@ export async function runAgent(opts: {
     emit({
       type: "error",
       message:
-        err instanceof ApiError && err.status === 429
-          ? "Estamos al límite de uso gratis por ahora. Esperá un minuto y probá de nuevo."
+        err instanceof ApiError && (err.status === 429 || err.status === 503)
+          ? "La IA está saturada en este momento. Esperá un minuto y probá de nuevo."
           : "Algo falló, probá de nuevo.",
     });
   } finally {
