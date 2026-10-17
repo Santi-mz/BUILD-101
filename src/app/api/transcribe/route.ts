@@ -16,7 +16,8 @@ export async function POST(req: Request) {
   if (audio.length === 0) return Response.json({ error: "No llegó audio." }, { status: 400 });
   if (audio.length > MAX_BYTES) return Response.json({ error: "El audio es muy largo. Probá con algo más corto." }, { status: 400 });
   try {
-    const text = await transcribe(audio, req.headers.get("content-type") ?? "audio/wav");
+    const context = decodeURIComponent(req.headers.get("x-rumbo-pregunta") ?? "").slice(0, 400);
+    const text = await transcribe(audio, req.headers.get("content-type") ?? "audio/wav", context);
     return Response.json({ text });
   } catch (err) {
     console.error(err);
