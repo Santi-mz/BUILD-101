@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
+const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
 // Tres formas de entrar. Las dos primeras no mandan emails (el plan gratis de Supabase manda muy pocos por hora).
 export default function Login() {
   const router = useRouter();
@@ -64,13 +66,23 @@ export default function Login() {
   }
 
   const busy = state === "working";
+  // Solo para el texto de carga: qué botón se tocó. La lógica de cada forma de entrar no cambia.
+  const [via, setVia] = useState<"guest" | "password" | "link" | null>(null);
+  const waiting = (v: typeof via) => busy && via === v;
   return (
     <div className="mx-auto max-w-sm px-4 py-16">
       <h1 className="text-2xl font-semibold tracking-tight">Entrá a Rumbo</h1>
       <p className="mt-2 text-sm text-muted">Con tu cuenta guardamos tu perfil y personalizamos tus noticias.</p>
 
-      <button onClick={guest} disabled={busy} className="mt-8 w-full rounded-xl bg-accent py-3 font-medium text-background disabled:opacity-60">
-        Probar sin cuenta
+      <button
+        onClick={() => {
+          setVia("guest");
+          guest();
+        }}
+        disabled={busy}
+        className={`mt-8 w-full rounded-xl bg-accent py-3 font-medium text-background disabled:opacity-60 ${FOCUS}`}
+      >
+        {waiting("guest") ? "Abriendo tu sesión…" : "Probar sin cuenta"}
       </button>
       <p className="mt-2 text-center text-xs text-muted">Entrás al toque. Tu perfil queda en este navegador.</p>
 
@@ -83,8 +95,18 @@ export default function Login() {
           Te mandamos un link a <b>{email}</b> (mirá también en spam).
         </p>
       ) : (
-        <form onSubmit={withPassword} className="space-y-3">
+        <form
+          onSubmit={(e) => {
+            setVia("password");
+            withPassword(e);
+          }}
+          className="space-y-3"
+        >
+          <label htmlFor="login-email" className="sr-only">
+            Email
+          </label>
           <input
+            id="login-email"
             type="email"
             required
             value={email}
@@ -93,7 +115,11 @@ export default function Login() {
             autoComplete="email"
             className="w-full rounded-xl border border-border bg-card px-4 py-3 outline-none focus:border-accent"
           />
+          <label htmlFor="login-password" className="sr-only">
+            Contraseña
+          </label>
           <input
+            id="login-password"
             type="password"
             required
             minLength={6}
@@ -103,15 +129,27 @@ export default function Login() {
             autoComplete="current-password"
             className="w-full rounded-xl border border-border bg-card px-4 py-3 outline-none focus:border-accent"
           />
-          <button disabled={busy} className="w-full rounded-xl border border-accent py-3 font-medium text-accent disabled:opacity-60">
-            {busy ? "Entrando…" : "Entrar o crear cuenta"}
+          <button disabled={busy} className={`w-full rounded-xl border border-accent py-3 font-medium text-accent disabled:opacity-60 ${FOCUS}`}>
+            {waiting("password") ? "Entrando…" : "Entrar o crear cuenta"}
           </button>
-          <button type="button" onClick={magicLink} disabled={busy} className="w-full text-sm text-muted underline-offset-4 hover:underline">
-            Prefiero que me manden un link por email
+          <button
+            type="button"
+            onClick={() => {
+              setVia("link");
+              magicLink();
+            }}
+            disabled={busy}
+            className={`w-full rounded-xl py-2 text-sm text-muted underline-offset-4 hover:underline disabled:opacity-60 ${FOCUS}`}
+          >
+            {waiting("link") ? "Mandando el link…" : "Prefiero que me manden un link por email"}
           </button>
         </form>
       )}
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
