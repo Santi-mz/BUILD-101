@@ -9,7 +9,8 @@ export type LLMProvider = {
   model: string;
   /** Devuelve JSON crudo (sin validar) según `jsonSchema`. */
   json(opts: { system: string; prompt: string; jsonSchema: Record<string, unknown> }): Promise<unknown>;
-  text(opts: { system: string; prompt: string }): Promise<string>;
+  /** `maxMs`: tope total para esta llamada (por ejemplo, para que una pregunta no tarde más que su plantilla vale). */
+  text(opts: { system: string; prompt: string; maxMs?: number }): Promise<string>;
 };
 
 /** Ningún modelo respondió a tiempo: no tiene sentido reintentar en este turno, conviene ir directo al plan B. */
@@ -53,8 +54,8 @@ function pauseFor(err: unknown, timedOut: boolean): number {
  * Prueba cada modelo una vez, con su propio límite de tiempo (y cancelando la llamada que se pasa), salteando los
  * que están en pausa. Si ninguno responde dentro de CALL_MS, tira LLMUnavailable.
  */
-async function firstThatAnswers<T>(run: (model: string, signal: AbortSignal) => Promise<T>, onModel: (m: string) => void): Promise<T> {
-  const deadline = Date.now() + CALL_MS;
+async function firstThatAnswers<T>(run: (model: string, signal: AbortSignal) => Promise<T>, onModel: (m: string) => void, maxMs = CALL_MS): Promise<T> {
+  const deadline = Date.now() + Math.min(CALL_MS, maxMs);
   const now = Date.now();
   const ready = ENGINE_MODELS.filter((m) => (pausedUntil.get(m) ?? 0) <= now);
   // Todos en pausa (cuota o saturación): ir directo al plan B sin gastar llamadas que van a fallar.
@@ -104,10 +105,11 @@ export function gemini(): LLMProvider {
       );
       return JSON.parse(res.text ?? "null");
     },
-    async text({ system, prompt }) {
+    async text({ system, prompt, maxMs }) {
       const res = await firstThatAnswers(
         (model, abortSignal) => ai.models.generateContent({ model, contents: prompt, config: { systemInstruction: system, temperature: 0.6, abortSignal } }),
         onModel,
+        maxMs,
       );
       return (res.text ?? "").trim();
     },
