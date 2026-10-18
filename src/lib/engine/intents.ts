@@ -10,7 +10,7 @@ const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,
 const RULES: [Intent, RegExp][] = [
   [
     "CLOSE",
-    /\b(quiero (terminar|cortar|parar|ver (los |mis )?resultados|ver lo que entendiste)|terminemos|cortemos|no quiero (mas|seguir)( preguntas| respondiendo| contestando)?|basta de preguntas|ya (fue|esta bien),? (terminemos|cortemos)|mostrame (los |mis )?resultados|dame (los |mis )?resultados|ver (los |mis )?resultados ya)\b/,
+    /\b(quiero (terminar|cortar|parar|ver (los |mis )?resultados|ver lo que entendiste)|terminemos|cortemos|no quiero (mas|seguir)( preguntas| respondiendo| contestando)?|basta de preguntas|ya (fue|esta bien),? (terminemos|cortemos)|mostrame (los |mis )?resultados|dame (los |mis )?resultados|ver (los |mis )?resultados ya|(quiero )?ver (mi |el )?perfil|quiero (el|mi|los|mis) resultados?|mostrame (lo que entendiste|el perfil|mi perfil))\b|^(ya esta|basta|listo,? terminemos)[.!]*$/,
   ],
   ["ALREADY_SAID", /\b(ya te (lo )?(dije|explique|conte|respondi)|eso ya te lo|te lo acabo de decir|(otra vez|de nuevo) (lo mismo|la misma pregunta)|me (estas )?(repitiendo|repetis)|ya lo (dije|conte|respondi)|no entendiste|no me entendiste|no me estas escuchando)\b/],
   ["CONFUSED", /\b(no (te )?entiendo( (que|lo que) (decis|me preguntas|me decis))?$|que (me )?(decis|quisiste decir|significa eso)|de que (me )?(hablas|estas hablando)|no se (a )?que te referis)\b|^(que|eh|como)\?+$|^\?+$/],

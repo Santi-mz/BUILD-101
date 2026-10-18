@@ -36,7 +36,7 @@ export const ENGINE_MODELS = [
 ];
 /** Tiempo máximo por intento con un modelo, y por llamada completa (todos los modelos). */
 const ATTEMPT_MS = 12_000;
-const CALL_MS = 20_000;
+const CALL_MS = 24_000;
 
 // Modelos en pausa hasta cierto momento (cuota por minuto o del día, saturación o lentitud).
 const pausedUntil = new Map<string, number>();
@@ -60,7 +60,8 @@ async function firstThatAnswers<T>(run: (model: string, signal: AbortSignal) => 
   // Todos en pausa (cuota o saturación): ir directo al plan B sin gastar llamadas que van a fallar.
   if (!ready.length) throw new LLMUnavailable("todos los modelos en pausa");
   let last: unknown = new Error("sin modelos");
-  for (const model of ready) {
+  // Un intento y un solo reintento (con otro modelo) por llamada: nunca más de 2 × 12 s.
+  for (const model of ready.slice(0, 2)) {
     const left = deadline - Date.now();
     if (left < 1500) break;
     const ctrl = new AbortController();
