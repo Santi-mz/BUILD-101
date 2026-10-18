@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     s.model = provider.model;
     if (s.status === "COMPLETED" && out.action.type === "CLOSE") await syncFeedProfile(s);
     return Response.json({ ...publicView(s), reply: out.reply, safety: out.safety });
-  });
+  }, req);
 }
 
 /** Si la persona entró con cuenta, el perfil cerrado ordena su feed de noticias. */
