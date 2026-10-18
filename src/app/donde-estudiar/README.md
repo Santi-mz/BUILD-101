@@ -52,6 +52,11 @@ La página ya acepta estos parámetros, todos opcionales. Los que no reconoce lo
 
 El contrato mínimo para enlazar es un `<Link>` en `/resultado` a `/donde-estudiar?riasec=${p.top.join(",")}`, con las letras que `/resultado` ya tiene en `profile.top`. Así no hace falta ninguna equivalencia: la persona elige el área.
 
+Detalles a tener en cuenta en `/resultado` (comprobado en `main` el 18/10/2026, con la devolución v2):
+- Si `p.top` viene vacío (perfil con poca información), conviene enlazar sin `riasec`: la página abre igual, sin el aviso.
+- La devolución v2 puede marcar el perfil como provisional. En ese caso el texto del enlace no debería prometer resultados para su perfil; alcanza con «Ver dónde estudiar».
+- Esta página no lee la sesión ni guarda nada: solo usa los parámetros de la URL.
+
 Si el equipo aprueba una equivalencia RIASEC → área, `/resultado` puede mandar también `area`. Esta es la propuesta, a revisar, y ya figura como etiqueta de cada área:
 
 | RIASEC | Área |

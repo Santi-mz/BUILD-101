@@ -27,21 +27,22 @@ export default function Explorador() {
 
   return (
     <div className="grid gap-5">
-      <nav aria-label="Tu recorrido" className="flex flex-wrap items-center gap-2 text-sm">
+      {/* Resumen de la selección (no son enlaces, por eso es una lista y no un <nav>). */}
+      <ol aria-label="Tu recorrido" className="flex flex-wrap items-center gap-2 text-sm">
         {[
           ["Área", area.label],
           ["Carrera", sel.career ?? "Todas las del área"],
           ["Dónde", lugar],
         ].map(([k, v], i) => (
-          <span key={k} className="flex items-center gap-2">
+          <li key={k} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden className="text-muted">→</span>}
             <span className="flex min-w-0 flex-col rounded-xl border border-border bg-card px-3 py-1.5">
               <small className="text-[0.68rem] uppercase tracking-wider text-muted">{k}</small>
               <b className="font-semibold">{v}</b>
             </span>
-          </span>
+          </li>
         ))}
-      </nav>
+      </ol>
 
       {riasec.length > 0 && (
         <p className="rounded-2xl border border-accent/40 bg-accent-soft/60 px-4 py-3 text-sm">

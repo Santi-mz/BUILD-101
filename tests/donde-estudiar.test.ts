@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { CATALOGO, FICHAS } from "@/app/donde-estudiar/catalogo";
+import { AREAS, CATALOGO, FICHAS, NC } from "@/app/donde-estudiar/catalogo";
 import { buscar, FILTROS_INICIALES, fuentesBecas, tieneCatalogo, type Filtros, type Seleccion } from "@/app/donde-estudiar/filtros";
 import { seleccionInicial, urlDe } from "@/app/donde-estudiar/parametros";
 
@@ -160,5 +160,47 @@ describe("parámetros de la URL", () => {
     const url = urlDe(sel, ["S"]);
     const back = q(url.split("?")[1]);
     expect(back).toEqual({ ...sel, riasec: ["S"] });
+  });
+});
+
+describe("los atributos de filtro coinciden con lo que dice cada ficha", () => {
+  // Si alguien marca un programa como gratuito o presencial sin que la fuente lo diga, estos tests fallan.
+  test("gratuidad: free solo con fuente, paid solo si la ficha dice que es paga, unknown si no consta", () => {
+    for (const f of FICHAS) {
+      if (f.tuition === "free") {
+        expect(f.matricula, f.id).toMatch(/^Gratuita/);
+        expect(f.matricula_fuente?.url, f.id).toMatch(/^https:/);
+      } else if (f.tuition === "paid") expect(f.matricula, f.id).toMatch(/^Paga/);
+      else expect(f.matricula, f.id).toBe(NC);
+    }
+  });
+
+  test("modalidad: sin dato en la ficha no hay modos; cada modo figura en el texto de la fuente", () => {
+    for (const f of FICHAS) {
+      if (!f.modes) {
+        expect(f.modalidad, f.id).toBe(NC);
+        continue;
+      }
+      expect(f.modalidad, f.id).not.toBe(NC);
+      if (f.modes.includes("presencial")) expect(f.modalidad, f.id).toMatch(/presencial/i);
+      if (f.modes.includes("hibrida")) expect(f.modalidad, f.id).toMatch(/híbrida|semipresencial|hyflex/i);
+      expect(f.modes, f.id).not.toContain("distancia");
+    }
+  });
+
+  test("cada carrera directa o relacionada existe en su área", () => {
+    for (const f of FICHAS) {
+      const area = AREAS.find((a) => a.id === f.areaId);
+      expect(area, f.id).toBeDefined();
+      for (const c of [...f.direct, ...f.related]) expect(area!.careers, `${f.id} → ${c}`).toContain(c);
+      expect(f.direct.length + f.related.length, f.id).toBeGreaterThan(0);
+    }
+  });
+
+  test("ninguna ficha se declara completa y todas tienen fecha de comprobación", () => {
+    for (const f of FICHAS) {
+      expect(f.pendientes.length, f.id).toBeGreaterThan(0);
+      expect(f.fecha_verificacion, f.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
   });
 });
