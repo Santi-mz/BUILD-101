@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "slots": {
+    "E1": [
+      { "id": "e1_ni_idea", "label": "Ni idea todavía", "evidence": [{ "indicatorId": "N0.ESTADO", "value": "sin opciones" }] },
+      { "id": "e1_varias", "label": "Dudo entre dos o tres cosas", "evidence": [{ "indicatorId": "N0.ESTADO", "value": "varias opciones" }] },
+      { "id": "e1_una", "label": "Tengo una idea pero no estoy seguro", "evidence": [{ "indicatorId": "N0.ESTADO", "value": "una preferida" }] },
+      { "id": "e1_presion", "label": "Mi familia espera algo de mí", "evidence": [{ "indicatorId": "N0.CONF_EXT" }] },
+      { "id": "e1_miedo", "label": "Me da miedo equivocarme", "evidence": [{ "indicatorId": "N0.CREENCIAS" }] },
+      { "id": "e1_info", "label": "No sé bien qué opciones hay", "evidence": [{ "indicatorId": "N0.INFO" }] }
+    ],
+    "E2": [
+      { "id": "e2_arreglar", "label": "Arreglar o armar cosas con las manos", "evidence": [{ "indicatorId": "N2.R", "area": "R" }, { "indicatorId": "N1.COSAS", "axis": "COSAS" }] },
+      { "id": "e2_entender", "label": "Entender cómo funcionan las cosas", "evidence": [{ "indicatorId": "N2.I", "area": "I" }, { "indicatorId": "N1.IDEAS", "axis": "IDEAS" }] },
+      { "id": "e2_crear", "label": "Crear: dibujar, música, video, escribir", "evidence": [{ "indicatorId": "N2.A", "area": "A" }, { "indicatorId": "N1.IDEAS", "axis": "IDEAS" }] },
+      { "id": "e2_ayudar", "label": "Ayudar o explicarle algo a alguien", "evidence": [{ "indicatorId": "N2.S", "area": "S" }, { "indicatorId": "N1.PERSONAS", "axis": "PERSONAS" }] },
+      { "id": "e2_organizar", "label": "Organizar un evento o liderar un grupo", "evidence": [{ "indicatorId": "N2.E", "area": "E" }, { "indicatorId": "N1.PERSONAS", "axis": "PERSONAS" }] },
+      { "id": "e2_ordenar", "label": "Ordenar datos, cuentas o planillas", "evidence": [{ "indicatorId": "N2.C", "area": "C" }, { "indicatorId": "N1.DATOS", "axis": "DATOS" }] },
+      { "id": "e2_deporte", "label": "Hacer deporte o entrenar", "evidence": [{ "indicatorId": "N2.R", "area": "R" }] },
+      { "id": "e2_naturaleza", "label": "Estar con animales o en la naturaleza", "evidence": [{ "indicatorId": "N2.R", "area": "R" }, { "indicatorId": "N2.I", "area": "I" }] }
+    ],
+    "E3": [
+      { "id": "e3_ayudar", "label": "Que sirva para ayudar a otros", "evidence": [{ "indicatorId": "N4.VALOR", "value": "ayudar" }] },
+      { "id": "e3_creatividad", "label": "Poder crear cosas nuevas", "evidence": [{ "indicatorId": "N4.VALOR", "value": "creatividad" }] },
+      { "id": "e3_estabilidad", "label": "Tener estabilidad", "evidence": [{ "indicatorId": "N4.VALOR", "value": "estabilidad" }] },
+      { "id": "e3_autonomia", "label": "Manejar mis tiempos", "evidence": [{ "indicatorId": "N4.VALOR", "value": "autonomia" }] },
+      { "id": "e3_aprender", "label": "Aprender todo el tiempo", "evidence": [{ "indicatorId": "N4.VALOR", "value": "aprendizaje" }] },
+      { "id": "e3_ingresos", "label": "Ganar bien", "evidence": [{ "indicatorId": "N4.VALOR", "value": "ingresos" }] },
+      { "id": "e3_variedad", "label": "Que no sea siempre lo mismo", "evidence": [{ "indicatorId": "N4.VALOR", "value": "variedad" }] },
+      { "id": "e3_ambiente", "label": "Buen ambiente con la gente", "evidence": [{ "indicatorId": "N4.VALOR", "value": "buen_ambiente" }] }
+    ],
+    "C1": [
+      { "id": "c1_ninguna", "label": "Ninguna en especial", "evidence": [], "marksDone": true },
+      { "id": "c1_interior", "label": "Vivo en el interior", "evidence": [{ "indicatorId": "N4.BARRERA", "value": "vive en el interior / no puede mudarse" }] },
+      { "id": "c1_noche", "label": "Solo puedo estudiar de noche", "evidence": [{ "indicatorId": "N4.BARRERA", "value": "solo puede cursar de noche" }] },
+      { "id": "c1_gratis", "label": "Necesito que sea gratis o barato", "evidence": [{ "indicatorId": "N4.BARRERA", "value": "necesita opciones gratuitas o de bajo costo" }] },
+      { "id": "c1_trabajo", "label": "Tengo que trabajar", "evidence": [{ "indicatorId": "N4.BARRERA", "value": "tiene poco tiempo disponible" }] }
+    ],
+    "C2": [
+      { "id": "c2_oficina", "label": "Estar sentado todo el día en una oficina", "evidence": [{ "indicatorId": "N3.RECHAZO", "area": "C" }] },
+      { "id": "c2_publico", "label": "Hablar en público o vender", "evidence": [{ "indicatorId": "N3.RECHAZO", "area": "E" }] },
+      { "id": "c2_numeros", "label": "Trabajar con muchos números", "evidence": [{ "indicatorId": "N3.RECHAZO", "area": "C" }] },
+      { "id": "c2_sangre", "label": "Ver sangre o heridas", "evidence": [{ "indicatorId": "N3.RECHAZO", "value": "sangre" }] },
+      { "id": "c2_manual", "label": "Trabajo físico pesado", "evidence": [{ "indicatorId": "N3.RECHAZO", "area": "R" }] },
+      { "id": "c2_cuidar", "label": "Cuidar personas todo el día", "evidence": [{ "indicatorId": "N3.RECHAZO", "area": "S" }] }
+    ],
+    "C3": [],
+    "COMMON": [
+      { "id": "none", "label": "Ninguna de estas", "noInfo": true },
+      { "id": "skip", "label": "Prefiero no decir", "noInfo": true }
+    ]
+  }
+}

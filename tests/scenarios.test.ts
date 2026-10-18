@@ -1,3 +1,4 @@
+import { RUBRIC_VERSION } from "@/lib/rubric";
 import { describe, expect, test } from "vitest";
 import { check, questionCount } from "@/lib/engine/guards";
 import { snapshot, setEvidenceStatus, weight } from "@/lib/engine/profile";
@@ -173,7 +174,8 @@ describe("recorrido completo y criterios del MVP", () => {
     expect(s.status).toBe("COMPLETED");
     const snap = snapshot(s);
     for (const v of snap.values) expect(s.evidence.some((e) => e.value === v.id && e.status === "CONFIRMED")).toBe(true);
-    expect(s.rubricVersion).toBe("1.0.0");
+    // La sesión guarda la versión de la rúbrica activa (v2 desde la spec de la demo; v1 con RUBRIC_VERSION=1).
+    expect(s.rubricVersion).toBe(RUBRIC_VERSION);
     expect(s.promptVersion).toMatch(/analyzer\.v1/);
     expect(s.userTurns).toBeLessThanOrEqual(40);
     assertTranscript(s);
