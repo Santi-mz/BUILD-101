@@ -3,6 +3,8 @@ import { check, questionCount } from "@/lib/engine/guards";
 import { snapshot, setEvidenceStatus, weight } from "@/lib/engine/profile";
 import { SAFETY_MESSAGE } from "@/lib/engine/safety";
 import { runTurn } from "@/lib/engine/turn";
+import { analyze } from "@/lib/engine/analyzer";
+import { LLMUnavailable } from "@/lib/llm/provider";
 import { provider, start, talk } from "./helpers";
 
 /** Verificación automática sobre todas las transcripciones: 0 o 1 pregunta y sin carreras (Documento 2, sección 14). */
@@ -63,7 +65,11 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
     const r = await talk(s, ["Me gusta todo: dibujar, la biología, liderar", "sí"]);
     expect(snapshot(s).show).toBe(false);
     await talk(s, ["Me gusta dibujar", "Una vez dibujé un mural en el liceo con amigos", "Organicé una rifa para el viaje de fin de año", "sí"]);
-    expect(s.messages.some((m) => m.action?.type === "ASK_DEEPEN")).toBe(true);
+    // Las experiencias se piden en los niveles de intereses (ver "respuesta breve: profundiza" en engine.test.ts),
+    // nunca sobre el estado de decisión del nivel 0. El resumen ya usa la experiencia concreta que contó.
+    expect(s.messages.some((m) => m.action?.type === "ASK_DEEPEN" && m.action.level === 0)).toBe(false);
+    expect(s.messages.some((m) => m.action?.type === "SUMMARIZE_LEVEL" && /mural/.test(m.content))).toBe(true);
+    expect(s.currentLevel).toBe(1);
     expect(questionCount(r[0].text)).toBe(1);
     assertTranscript(s);
   });
@@ -178,5 +184,34 @@ describe("recorrido completo y criterios del MVP", () => {
     await talk(s, ["Me llamo Sofía Rodríguez y mi celular es 098 765 432"]);
     const stored = s.messages.find((m) => m.role === "USER")!.content;
     expect(stored).not.toMatch(/Sofía|098/);
+  });
+});
+
+describe("Gemini caído o lento (casos reales de producción)", () => {
+  // Un proveedor "gemini" que nunca responde: es lo que pasaba con la cuota agotada o el modelo lento.
+  const down = { name: "gemini" as const, model: "caido", json: async () => { throw new LLMUnavailable("timeout"); }, text: async () => { throw new LLMUnavailable("timeout"); } };
+
+  test("el analizador cae a las reglas en vez de quedar vacío", async () => {
+    const s = await start();
+    const { output, fallback } = await analyze(down, s, "Me gusta armar cosas con las manos y arreglar bicis");
+    expect(fallback).toBe(true);
+    expect(output.evidence.some((e) => e.indicatorId === "N2.R")).toBe(true);
+  });
+
+  test("«todo abierto» no recibe un pedido de «una vez puntual»", async () => {
+    const s = await start();
+    const out = await runTurn(down, s, "todo abierto");
+    expect(out.action.type).not.toBe("ASK_DEEPEN");
+    expect(out.reply).not.toMatch(/una vez puntual/);
+    assertTranscript(s);
+  });
+
+  test("confirmar el resumen funciona aunque el LLM no responda", async () => {
+    const s = await start();
+    await runTurn(down, s, "no tengo ni idea de qué estudiar");
+    expect(s.pendingConfirmation).not.toBeNull();
+    await runTurn(down, s, "Sí, me representa");
+    expect(s.pendingConfirmation).toBeNull();
+    expect(s.levels[0].status).toBe("CONFIRMED");
   });
 });

@@ -1,5 +1,5 @@
 import { indicator, rubric, type Area } from "@/lib/rubric";
-import type { LLMProvider } from "@/lib/llm/provider";
+import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ANALYZER_SYSTEM } from "@/prompts/analyzer.v1";
 import { panelLabel } from "./profile";
 import { precheck } from "./safety";
@@ -104,10 +104,13 @@ export async function analyze(provider: LLMProvider, s: SessionState, userText: 
       }
     } catch (err) {
       console.warn(JSON.stringify({ event: "analyzer.error", attempt, error: String(err).slice(0, 120) }));
+      // Ningún modelo respondió a tiempo: reintentar solo alargaría el turno.
+      if (err instanceof LLMUnavailable) break;
     }
   }
-  // Fallback del contrato: sin evidencias, pero se conserva el prechequeo de riesgo.
-  return { output: { ...EMPTY_OUTPUT, risk: precheck(userText) }, fallback: true };
+  // Fallback: el analizador por reglas. Saca menos evidencias que el LLM, pero no deja el turno vacío
+  // (con evidencia vacía el planificador tomaba toda respuesta como "breve" y pedía ejemplos sin sentido).
+  return { output: mockAnalyze(s, userText), fallback: true };
 }
 
 /** Recorta campos largos antes de validar (el modelo a veces se pasa del límite). */
@@ -225,13 +228,13 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
       push({ indicatorId: "N4.INFLUENCIA", polarity: 1, kind: "DECLARED", concrete: false, quote });
 
     // Nivel 0
-    if (/\b(no tengo (ni )?idea|ni idea|no se que (hacer|estudiar|elegir)|esta todo abierto|cero claro)\b/.test(c))
+    if (/\b(no tengo (ni )?idea|ni idea|no se que (hacer|estudiar|elegir)|(esta )?todo abierto|cero claro|estoy pintad[oa]|perdid[oa]|crisis vocacional)\b/.test(c))
       push({ indicatorId: "N0.ESTADO", value: "sin opciones", polarity: 1, kind: "DECLARED", concrete: false, quote });
     else if (/\b(dudo entre|entre dos|varias opciones|varias cosas|no se si)\b/.test(c))
       push({ indicatorId: "N0.ESTADO", value: "varias opciones", polarity: 1, kind: "DECLARED", concrete: false, quote });
-    else if (/\b(ya se (que|lo que)|tengo claro|tengo una idea|quiero estudiar|me gustaria estudiar)\b/.test(c))
+    else if (/\b(ya se (que|lo que)|tengo claro|tengo (una )?idea|quiero estudiar|me gustaria estudiar)\b/.test(c))
       push({ indicatorId: "N0.ESTADO", value: "una preferida", polarity: 1, kind: "DECLARED", concrete: false, quote });
-    if (/\b(no conozco|no se que (hay|opciones)|no se como funciona|me falta informacion|no tengo informacion)\b/.test(c))
+    if (/\b(no conozco|no se que (hay|opciones)|no se como funciona|me falta (informacion|info)|no tengo informacion)\b/.test(c))
       push({ indicatorId: "N0.INFO", polarity: 1, kind: "DECLARED", concrete: false, quote });
     if (/\b(mis (viejos|padres)|mi (familia|mama|papa|madre|padre))\b.*\b(quieren|dicen|esperan|insisten|prefieren)\b/.test(c))
       push({ indicatorId: "N0.CONF_EXT", polarity: 1, kind: "DECLARED", concrete: false, quote });

@@ -1,5 +1,5 @@
 import { indicator, levelOf } from "@/lib/rubric";
-import type { LLMProvider } from "@/lib/llm/provider";
+import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ACTION_GUIDE, INTERVIEWER_SYSTEM } from "@/prompts/interviewer.v1";
 import { check, type GuardMode } from "./guards";
 import { evidenceOfLevel, panelLabel } from "./profile";
@@ -14,7 +14,9 @@ export const modeFor = (a: Action): GuardMode => (a.type === "SUMMARIZE_LEVEL" ?
 const userTextOf = (s: SessionState) => s.messages.filter((m) => m.role === "USER").map((m) => m.content).join(" \n ");
 
 export function summaryEvidence(s: SessionState, lvl: number): Evidence[] {
-  const ev = evidenceOfLevel(s, lvl).filter((e) => e.polarity === 1 || e.indicatorId.startsWith("N2."));
+  const own = evidenceOfLevel(s, lvl).filter((e) => e.polarity === 1 || e.indicatorId.startsWith("N2."));
+  // Nivel cerrado por tope de turnos sin evidencia propia: se resume lo que sí contó.
+  const ev = own.length ? own : s.evidence.filter((e) => e.status === "PENDING" && e.polarity === 1);
   const n4 = lvl >= 1 ? s.evidence.filter((e) => e.indicatorId.startsWith("N4.") && e.status === "PENDING") : [];
   // Sin repetir: un ítem por etiqueta, priorizando episodios concretos.
   const seen = new Set<string>();
@@ -67,6 +69,7 @@ export async function write(provider: LLMProvider, s: SessionState, a: Action): 
       prompt += `\n\nTu borrador anterior no pasó las validaciones: ${g.reasons.join("; ")}. Reescribilo corrigiendo eso.`;
     } catch (err) {
       console.warn(JSON.stringify({ event: "interviewer.error", attempt, error: String(err).slice(0, 120) }));
+      if (err instanceof LLMUnavailable) break;
     }
   }
   return { text: safeTemplate(s, a, mode, said), source: "template" };
@@ -142,8 +145,9 @@ const STAGE_INTRO: Record<number, string> = {
 
 export function summaryTemplate(s: SessionState, lvl: number) {
   const ev = summaryEvidence(s, lvl);
-  const declared = ev.filter((e) => e.kind === "DECLARED").slice(0, 3);
-  const parts = declared.map((e) => `${panelLabel(e).toLowerCase()} (cuando dijiste "${shortQuote(e.quote)}")`);
+  // Si no hay nada dicho explícitamente, se resumen las hipótesis en vez de un "todavía poco" vacío.
+  const declared = ev.filter((e) => e.kind === "DECLARED");
+  const parts = (declared.length ? declared : ev).slice(0, 3).map((e) => `${panelLabel(e).toLowerCase()} (cuando dijiste "${shortQuote(e.quote)}")`);
   const head = `Hasta acá entendí esto: ${parts.length ? parts.join("; ") : "todavía poco, y está bien"}.`;
   let text = `${head} ¿Te representa o cambiarías algo?`;
   while (text.split(/\s+/).length > 115 && parts.length > 1) {

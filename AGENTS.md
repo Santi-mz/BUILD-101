@@ -41,6 +41,6 @@ Somos tres trabajando en paralelo con Claude Code y Kiro. Estas reglas evitan qu
 - La IA es esencial, no decorativa: la IA analiza cada respuesta y redacta las preguntas; las noticias las etiqueta la IA; el feed se ordena por el perfil.
 - Única excepción a "nada mockeado": el catálogo y los mentores de `src/data/*.demo.json` y el modo sin clave (`LLM_PROVIDER=mock`). Todo lo demo se rotula DEMO y nunca se muestra como disponible ni verificado.
 - El criterio científico vive en `src/knowledge/rubric.v1.json` (fuente: Documento 1). Cambiarlo es publicar una versión nueva, no editar en el lugar.
-- Modelo: Gemini (`gemini-flash-latest`, plan gratis) vía `@google/genai` (`genai()` y `MODEL` en `src/lib/agent/run.ts`). Variable: `GEMINI_API_KEY`.
+- Modelo: Gemini (plan gratis) vía `@google/genai`. Variable: `GEMINI_API_KEY`. El motor de la entrevista usa `ENGINE_MODELS` de `src/lib/llm/provider.ts` (primero `gemini-flash-lite-latest`, que responde en ~2 s; `gemini-flash-latest` tarda ~40 s y no entra en un turno). Si ningún modelo responde, el analizador cae a reglas y el entrevistador a plantillas.
 - Perfil, porcentajes, próxima pregunta y cierre los decide código determinista (`src/lib/engine/profile.ts` y `planner.ts`), nunca el modelo. Antes de abrir el PR: `npm test`.
 - Textos de la app en español rioplatense.
