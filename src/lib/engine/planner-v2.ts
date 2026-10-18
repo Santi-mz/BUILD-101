@@ -78,7 +78,8 @@ function answerAt(s: SessionState, k: number) {
   // La respuesta al mini-resumen o a la oferta de cierre ("sí", "dale") no es una respuesta sin información.
   const idx = s.messages.indexOf(msg);
   const prev = s.messages.slice(0, idx).reverse().find((m) => m.role === "ASSISTANT");
-  const neutral = prev?.action?.type === "MINI_SUMMARY" || prev?.action?.type === "OFFER_CLOSE";
+  // "No entiendo" pide reformular: no es una respuesta sin información ni suma para cerrar por estancamiento.
+  const neutral = prev?.action?.type === "MINI_SUMMARY" || prev?.action?.type === "OFFER_CLOSE" || detectIntent(msg.content) === "CONFUSED";
   const noInfo = !neutral && evidence.length === 0 && (NO_INFO_TEXT.test(normText(msg.content)) || isNoInfo(quality, false, false));
   return { msg, evidence, noInfo };
 }
@@ -193,6 +194,11 @@ export function nextV2(s: SessionState): Action {
   if ((s.llmFailures ?? 0) >= 2 && !closeOffered) return { type: "OFFER_CLOSE", level: lvl };
 
   // Respuesta sin información: hasta 8 opciones y OTRO tema. Nunca pedir un ejemplo.
+  // "No entiendo": la misma pregunta otra vez, más simple y con opciones (si ese casillero todavía admite otra).
+  if (last && detectIntent(last.msg.content) === "CONFUSED" && prevAction?.slot && prevAction.slot !== "C3" && slotAsks(s, prevAction.slot) < LIMITS.maxSlotAsks) {
+    return ask(s, "OFFER_OPTIONS", prevAction.slot);
+  }
+
   if (last?.noInfo) {
     const slot = nextSlot(s, prevAction?.slot ?? null) ?? nextSlot(s);
     return slot ? ask(s, "OFFER_OPTIONS", slot) : { type: "CLOSE", level: lvl, reason: "stalled" };

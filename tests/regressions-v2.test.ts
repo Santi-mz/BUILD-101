@@ -120,3 +120,30 @@ describe("detalles de la noche (18/10)", () => {
     else expect(out.reply).toMatch(/Es re común tener ese miedo/);
   });
 });
+
+describe("con Gemini en producción (18/10, 07 UTC)", () => {
+  test("«no entiendo» repregunta lo mismo con opciones y no cierra la charla", async () => {
+    const s = await start();
+    await runTurn(provider, s, "me gusta arreglar compus");
+    await runTurn(provider, s, "¿qué me recomendás estudiar?");
+    const before = s.lastAction;
+    const out = await runTurn(provider, s, "no entiendo");
+    expect(s.status).toBe("ACTIVE");
+    expect(out.action.type).toBe("OFFER_OPTIONS");
+    if (before?.slot && before.slot !== "C3") expect(out.action.slot).toBe(before.slot);
+    expect(out.reply).toMatch(/Perdón, lo pregunto más fácil/);
+  });
+
+  test("la cita del mini-resumen es del área que resume", async () => {
+    const s = await start();
+    await runTurn(
+      provider,
+      s,
+      "me gusta mucho la biología, los fines de semana ayudo a mi tía en su panadería, me encanta investigar cómo funcionan los bichos",
+    );
+    s.messages.push({ id: "q", role: "ASSISTANT", content: "¿Y algo más?", action: { type: "ASK_SLOT", level: 1, slot: "E3" }, createdAt: "" });
+    const { miniSummaryText } = await import("@/lib/engine/interviewer-v2");
+    const text = miniSummaryText(s);
+    if (/entender cómo funcionan/.test(text)) expect(text).not.toMatch(/panadería/);
+  });
+});
