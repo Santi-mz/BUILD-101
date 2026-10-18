@@ -25,5 +25,5 @@ export async function POST(req: Request) {
     }
     if (s.status !== "COMPLETED") return fail(409, "not_ready", "Primero terminemos de charlar para entender qué te interesa.");
     await researchPaths(s, input.filters ?? suggestedFilters(s));
-  });
+  }, req);
 }
