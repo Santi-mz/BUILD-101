@@ -40,7 +40,10 @@ const SLOT_QUESTIONS: Record<SlotId, string[]> = {
   C2: ["N3.RECHAZO"],
   C3: ["N3.ACTIVIDAD"],
 };
-const INTEREST = /^N2\.|^N3\.(ACTIVIDAD|TEMA|FLOW|ROL)$/;
+const INTEREST = /^N[12]\.|^N3\.(ACTIVIDAD|TEMA|FLOW|ROL)$/;
+/** Ejes de Prediger → áreas a las que apuntan (personas: S/E; cosas: R; datos: C; ideas: I/A). */
+const AXIS_AREAS: Record<string, string[]> = { PERSONAS: ["S", "E"], COSAS: ["R"], DATOS: ["C"], IDEAS: ["I", "A"] };
+const areasOf = (e: { area?: string; axis?: string }) => (e.area ? [e.area] : e.axis ? (AXIS_AREAS[e.axis] ?? []) : []);
 /** Acciones que son preguntas de la IA aunque el texto no tenga "?" (para no contar de menos). */
 const QUESTION_ACTIONS = new Set<Action["type"]>([
   "GREETING", "ASK_SLOT", "OFFER_OPTIONS", "ASK_DEEPEN", "MINI_SUMMARY", "OFFER_CLOSE",
@@ -111,7 +114,9 @@ function answeredNoneTo(s: SessionState, slot: SlotId) {
 export function slotStatus(s: SessionState): Record<SlotId, boolean> {
   const ev = active(s).filter((e) => weight(e) > 0);
   const positive = ev.filter((e) => e.polarity === 1);
-  const sameArea = AREAS.some((a) => positive.filter((e) => e.area === a && INTEREST.test(e.indicatorId)).length >= 2);
+  // E2: dos evidencias de interés (N1/N2/N3) que apunten a la misma área. N1 apunta por su eje ("Arreglar o armar
+  // cosas con las manos" = N2.R + N1.COSAS → dos a Realista), así un solo botón del banco puede cumplirlo.
+  const sameArea = AREAS.some((a) => positive.filter((e) => INTEREST.test(e.indicatorId) && areasOf(e).includes(a)).length >= 2);
   return {
     E1: ev.some((e) => e.indicatorId.startsWith("N0.")) || slotAsks(s, "E1") >= 1,
     E2: sameArea,
@@ -174,7 +179,7 @@ export function nextV2(s: SessionState): Action {
   if (offerAccepted && extraAsked) return { type: "CLOSE", level: lvl, reason: "offer_accepted" };
   if (offerAccepted) {
     const slot = nextSlot(s);
-    return slot ? ask(s, "ASK_SLOT", slot) : { type: "CLOSE", level: lvl, reason: "sufficient" };
+    return slot ? ask(s, "ASK_SLOT", slot) : { type: "CLOSE", level: lvl, reason: essentialsMet(s) ? "sufficient" : "stalled" };
   }
 
   const ess = essentialsMet(s);
@@ -209,5 +214,5 @@ export function nextV2(s: SessionState): Action {
   }
 
   const slot = nextSlot(s);
-  return slot ? ask(s, "ASK_SLOT", slot) : { type: "CLOSE", level: lvl, reason: "sufficient" };
+  return slot ? ask(s, "ASK_SLOT", slot) : { type: "CLOSE", level: lvl, reason: essentialsMet(s) ? "sufficient" : "stalled" };
 }

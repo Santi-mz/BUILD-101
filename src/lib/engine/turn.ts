@@ -6,6 +6,7 @@ import { ANALYZER_PROMPT_VERSION } from "@/prompts/analyzer.v1";
 import { INTERVIEWER_PROMPT_VERSION } from "@/prompts/interviewer.v1";
 import { analyze } from "./analyzer";
 import { write } from "./interviewer";
+import { ONE_MORE, optionsFor } from "./interviewer-v2";
 import { maskPII } from "./pii";
 import { detectIntent, MIN_TURNS_TO_CLOSE } from "./intents";
 import { essentialsMet, isNoInfo, isV2, MAX_QUESTIONS, next, withIntent } from "./planner";
@@ -86,6 +87,7 @@ function say(s: SessionState, content: string, action: Action): { content: strin
   }
   s.messages.push({ id: newId("msg"), role: "ASSISTANT", content, action, createdAt: new Date().toISOString() });
   s.lastAction = action;
+  if (isV2(s)) s.lastOptions = action.options?.length ? action.options : null;
   return { content, action };
 }
 
@@ -96,6 +98,7 @@ function closeWith(s: SessionState, reason: CloseReason): { content: string; act
   const content = s.provisional ? CLOSE_TEXT_PROVISIONAL : CLOSE_TEXT;
   s.messages.push({ id: newId("msg"), role: "ASSISTANT", content, action, createdAt: new Date().toISOString() });
   s.lastAction = action;
+  s.lastOptions = null;
   return { content, action };
 }
 
@@ -182,6 +185,7 @@ export async function greet(provider: LLMProvider, s: SessionState) {
   if (isV2(s)) commitV2(s, a);
   else commit(s, a);
   const { text } = await write(provider, s, a);
+  if (isV2(s)) a.options = optionsFor(s, a);
   say(s, text, a);
   return { reply: text, action: a };
 }
@@ -270,8 +274,7 @@ const NO_INFO_TEXT = /^(no se|nose|ni idea|depende|capaz|puede ser|que se yo|pas
 const SUMMARY_REJECT = /^(no|nop|nope)\b|\bno es asi\b|\bno me representa\b|^para nada|^nada que ver/;
 const SUMMARY_PARTIAL = /\b(mas o menos|masomenos|en parte|algo asi|mas bien no)\b/;
 const SUMMARY_CONFIRM = /^(si|sii+|exacto|tal cual|me representa|dale|obvio|claro|totalmente|correcto)\b/;
-/** Botón "Una pregunta más" de la oferta de cierre (no está en el banco: lo agrega la oferta). */
-export const ONE_MORE = { id: "one_more", label: "Una pregunta más" };
+export { ONE_MORE } from "./interviewer-v2";
 
 /** Respuesta al mini-resumen: confirma o descarta lo que se resumió (las evidencias de las áreas destacadas). */
 function resolveMiniSummary(s: SessionState, text: string): "CONFIRMED" | "REJECTED" | "PARTIAL" | null {
@@ -365,7 +368,8 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
   // 7–8. Entrevistador (con plantilla si el LLM falla o no hay tiempo) + guardas.
   const { text: reply, source } = await write(llm, s, a);
   if (source === "template" && provider.name !== "mock") logEvent("agent.fallback", { session: s.id, agent: "interviewer" });
-  // 9. Guardar (say aplica el freno del tope).
+  // 9. Opciones del banco y guardar (say aplica el freno del tope).
+  a.options = optionsFor(s, a);
   const out = say(s, reply, a);
   return { reply: out.content, action: out.action, safety: false };
 }
