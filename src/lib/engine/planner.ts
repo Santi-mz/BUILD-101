@@ -1,10 +1,21 @@
 import { levelOf, rubric } from "@/lib/rubric";
 import { active, confirmedValues, evidenceOfLevel, exitCriteriaMet, isFlatProfile, levelState, mentionedValues, specifics } from "./profile";
 import type { Intent } from "./intents";
+import { isV2, nextV2 } from "./planner-v2";
 import type { Action, SessionState } from "./types";
 
+export { complementaryCount, essentialsMet, isNoInfo, isV2, MAX_QUESTIONS, nextSlot, nextV2, questionsAsked, slotStatus } from "./planner-v2";
+
 /**
- * Planificador determinista (Documento 2, sección 8). Decide la próxima acción y el indicador objetivo.
+ * Planificador activo según la rúbrica de la sesión: v2 (demo, presupuesto de 8 preguntas, planner-v2.ts)
+ * o v1 (Documento 2, sección 8: conversaciones largas por niveles). Los dos son puros.
+ */
+export function next(s: SessionState): Action {
+  return isV2(s) ? nextV2(s) : nextV1(s);
+}
+
+/**
+ * Planificador determinista v1 (Documento 2, sección 8). Decide la próxima acción y el indicador objetivo.
  * Es puro: no modifica el estado.
  */
 const P = rubric.planner;
@@ -52,7 +63,8 @@ function singleUnconcrete(s: SessionState, lvl: number) {
   return null;
 }
 
-export function next(s: SessionState): Action {
+/** Planificador v1 (Documento 2, sección 8): conversaciones largas por niveles. Se usa con sesiones de la rúbrica v1. */
+export function nextV1(s: SessionState): Action {
   const lvl = s.currentLevel;
   if (s.status === "SAFETY_STOP") return { type: "SAFETY", level: lvl };
   if (s.userTurns === 0) return { type: "GREETING", level: 0, indicatorId: "N0.ESTADO" };
@@ -86,7 +98,7 @@ export function next(s: SessionState): Action {
     // Saltar niveles que ya estaban confirmados (por ejemplo, al volver atrás por una contradicción).
     let target = lvl + 1;
     while (target <= 3 && levelState(s, target).status === "CONFIRMED") target++;
-    if (target > 3) return { ...next({ ...s, currentLevel: 3 }), setLevel: 3 };
+    if (target > 3) return { ...nextV1({ ...s, currentLevel: 3 }), setLevel: 3 };
     return { type: "ADVANCE_LEVEL", level: target, indicatorId: nextIndicator(s, target) };
   }
 
@@ -148,6 +160,9 @@ export function withIntent(s: SessionState, a: Action, intent: Intent, minTurnsT
   const question = (x: Action): Action =>
     x.type === "ASK_DEEPEN" ? { type: "ASK_NEW", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator) } : x;
   if (a.type === "SAFETY" || a.type === "CLOSE") return a;
+  // v2: el planificador ya trata las intenciones (cerrar → CLOSE; el resto, como respuesta sin información);
+  // acá solo se adjunta la intención para que el mensaje la reconozca.
+  if (isV2(s)) return { ...a, intent };
   switch (intent) {
     case "CLOSE":
       if (s.userTurns >= minTurnsToClose) return { type: "CLOSE", level: lvl };

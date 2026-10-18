@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { indicatorIds, rubric, rubricSchema } from "@/lib/rubric";
+import { indicatorIds, rubric, rubricSchema, rubricV1 } from "@/lib/rubric";
 import raw from "@/knowledge/rubric.v1.json";
 import { areaScores, axes, displayInfo, isFlatProfile, percentages, weight } from "@/lib/engine/profile";
 import { next } from "@/lib/engine/planner";
@@ -24,7 +24,8 @@ const ev = (p: Partial<Evidence>): Evidence => ({
   createdAt: "",
   ...p,
 });
-const session = (p: Partial<SessionState> = {}): SessionState => ({ ...newSession({ ageRange: "A18_21", guardianConsent: false, model: "mock" }), ...p });
+// Estas pruebas del planificador cubren el v1 (por niveles): la sesión se crea con la rúbrica v1.
+const session = (p: Partial<SessionState> = {}): SessionState => ({ ...newSession({ ageRange: "A18_21", guardianConsent: false, model: "mock" }), rubricVersion: rubricV1.version, ...p });
 
 describe("rúbrica", () => {
   test("es válida, tiene los niveles 0 a 4 y los ids son únicos", () => {
