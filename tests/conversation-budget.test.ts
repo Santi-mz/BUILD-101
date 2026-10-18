@@ -108,7 +108,7 @@ describe("perfil a pedido y resiliencia (spec demo)", () => {
 });
 
 describe("devolución y resúmenes (spec demo)", () => {
-  test.fails("T7: lo observado cita evidencias existentes y lo desconocido cubre los casilleros faltantes", async () => {
+  test("T7: lo observado cita evidencias existentes y lo desconocido cubre los casilleros faltantes", async () => {
     const s = await simulate(PERSONAS.mixto);
     const snap = snapshot(s) as unknown as Record<string, unknown>;
     const observed = field<{ evidenceIds: string[] }[]>(snap, "observed");

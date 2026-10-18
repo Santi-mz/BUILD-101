@@ -1,4 +1,6 @@
-import { AREAS, AREA_LABELS, indicator, levelOf, levelOfIndicator, rubric, valueLabel, type Area } from "@/lib/rubric";
+import { AREAS, AREA_LABELS, indicator, levelOf, levelOfIndicator, rubric, valueLabel, type Area, type SlotId } from "@/lib/rubric";
+// Ciclo intencional y seguro: planner-v2 usa funciones de este módulo solo dentro de funciones (nunca al cargar).
+import { slotStatus } from "./planner-v2";
 import type { AnalyzerOutput, Evidence, LevelState, SessionState } from "./types";
 
 /**
@@ -287,7 +289,55 @@ export function snapshot(s: SessionState) {
     expectations: act.filter((e) => e.indicatorId === "N4.EXPECT").map((e) => e.quote),
     openQuestions: openQuestions(s),
     contradictions: s.openContradictions,
+    // v2 (demo, design.md §9): lo observado en lenguaje llano con su evidencia, lo que falta y si es provisional.
+    ...feedbackV2(s),
   };
+}
+
+const OBSERVED_AREA: Record<Area, string> = {
+  R: "Te tira hacer cosas con las manos o el cuerpo",
+  I: "Te tira entender cómo funcionan las cosas",
+  A: "Te tira crear y expresarte",
+  S: "Te tira ayudar y acompañar a otros",
+  E: "Te tira organizar y llevar adelante cosas con otros",
+  C: "Te tira ordenar y registrar",
+};
+const UNKNOWN_SLOT: Record<SlotId, string> = {
+  E1: "Todavía no sé cómo estás con esto de elegir qué hacer después.",
+  E2: "Todavía no sé bien qué cosas disfrutás hacer.",
+  E3: "Todavía no sé qué te importaría que tenga un trabajo o estudio.",
+  C1: "Todavía no sé si hay algo práctico a tener en cuenta (horarios, plata, dónde vivís).",
+  C2: "Todavía no sé qué preferirías evitar.",
+  C3: "Todavía no tengo un ejemplo concreto de algo que hayas hecho y te haya gustado.",
+};
+
+/**
+ * Devolución v2: 2 a 4 afirmaciones observadas (áreas destacadas y ejemplos concretos), cada una con las evidencias
+ * que la sostienen; un "todavía no sé" por casillero no cumplido; y si el perfil es provisional.
+ */
+function feedbackV2(s: SessionState) {
+  const act = active(s).filter((e) => weight(e) > 0);
+  const byOption = (e: Evidence) => e.rationale.startsWith("Opción elegida");
+  const best = (list: Evidence[]) => [...list].sort((x, y) => Number(byOption(x)) - Number(byOption(y)) || Number(y.concrete) - Number(x.concrete))[0];
+  const observed: { text: string; evidenceIds: string[]; quote: string }[] = [];
+  const areas = topAreas(act);
+  const fallbackAreas = areas.length ? areas : AREAS.filter((a) => act.some((e) => e.area === a && e.polarity === 1)).slice(0, 2);
+  for (const a of fallbackAreas) {
+    const support = act.filter((e) => e.area === a && e.polarity === 1);
+    if (!support.length) continue;
+    const text = areas.length ? OBSERVED_AREA[a] : `${OBSERVED_AREA[a].replace("Te tira", "Apareció algo de")} (con poca información todavía)`;
+    observed.push({ text, evidenceIds: support.map((e) => e.id), quote: best(support).quote });
+  }
+  const cited = new Set(observed.flatMap((o) => o.evidenceIds));
+  for (const e of specifics(s)) {
+    if (observed.length >= 4) break;
+    if (cited.has(e.id)) continue;
+    observed.push({ text: "Algo que disfrutaste hacer", evidenceIds: [e.id], quote: e.quote });
+    cited.add(e.id);
+  }
+  const slots = slotStatus(s);
+  const unknown = (Object.keys(slots) as SlotId[]).filter((k) => !slots[k]).map((k) => UNKNOWN_SLOT[k]);
+  return { observed: observed.slice(0, 4), unknown, slots, provisional: s.provisional, closeReason: s.closeReason };
 }
 export type ProfileSnapshot = ReturnType<typeof snapshot>;
 
