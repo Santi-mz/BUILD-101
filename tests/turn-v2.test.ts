@@ -86,3 +86,25 @@ describe("turno v2", () => {
     expect(s.evidence.filter((e) => e.area === "A" && e.polarity === 1).every((e) => e.status === "REJECTED")).toBe(true);
   });
 });
+
+describe("oferta de cierre honesta (producción, 18/10)", () => {
+  test("con el LLM caído, «no sé» y «¿qué me recomendás?» no cuentan como fallos del LLM ni disparan la oferta", async () => {
+    const p = failing();
+    const s = await start("A18_21", p);
+    await runTurn(p, s, "no sé");
+    const out = await runTurn(p, s, "¿qué me recomendás estudiar?");
+    expect(s.llmFailures).toBe(0);
+    expect(out.action.type).not.toBe("OFFER_CLOSE");
+    expect(out.reply).toMatch(/caminos concretos/);
+  });
+
+  test("si ofrece cerrar sin los imprescindibles, no dice que ya puede armar el perfil", async () => {
+    const p = failing();
+    const s = await start("A18_21", p);
+    await runTurn(p, s, "eh");
+    const out = await runTurn(p, s, "mmm");
+    expect(out.action.type).toBe("OFFER_CLOSE");
+    expect(out.reply).not.toMatch(/ya puedo armarte/);
+    expect(out.reply).toMatch(/Todavía sé poco/);
+  });
+});
