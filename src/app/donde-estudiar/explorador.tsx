@@ -1,30 +1,23 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AREAS, CATALOGO, NC, REGIONS, type Ficha } from "./catalogo";
-import { buscar, FILTROS_INICIALES, fuentesBecas, tieneCatalogo, type Filtros, type Resultado, type Seleccion } from "./filtros";
+import { RIASEC, seleccionInicial, urlDe } from "./parametros";
+import { buscar, FILTROS_INICIALES, fuentesBecas, LANG_LABEL, MODE_LABEL, tieneCatalogo, type Filtros, type Resultado, type Seleccion } from "./filtros";
 
 const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 const INCOMPLETO = "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200";
 const fecha = (iso: string) => iso.split("-").reverse().join("/");
 
-/**
- * Selección inicial desde la URL, para poder enlazar la página desde otras pantallas sin acoplarlas:
- * /donde-estudiar?area=emp&carrera=Economía&region=uy. Los valores que no existen se ignoran.
- */
-function seleccionInicial(params: URLSearchParams): Seleccion {
-  const area = AREAS.find((a) => a.id === params.get("area")) ?? AREAS[0];
-  const career = area.careers.find((c) => c === params.get("carrera")) ?? null;
-  const region = REGIONS.find((r) => r.id === params.get("region")) ?? REGIONS[0];
-  const country = region.countries.find((c) => c === params.get("pais")) ?? null;
-  return { area: area.id, career, region: region.id, country };
-}
-
 export default function Explorador() {
   const params = useSearchParams();
-  const [sel, setSel] = useState<Seleccion>(() => seleccionInicial(new URLSearchParams(params.toString())));
+  const [{ riasec, ...inicial }] = useState(() => seleccionInicial(new URLSearchParams(params.toString())));
+  const [sel, setSel] = useState<Seleccion>(inicial);
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
+  useEffect(() => {
+    window.history.replaceState(null, "", urlDe(sel, riasec));
+  }, [sel, riasec]);
   const area = AREAS.find((a) => a.id === sel.area)!;
   const region = REGIONS.find((r) => r.id === sel.region)!;
   const lugar = sel.country ?? (region.countries.length > 1 ? `${region.label} (cualquier país)` : region.label);
@@ -49,6 +42,13 @@ export default function Explorador() {
           </span>
         ))}
       </nav>
+
+      {riasec.length > 0 && (
+        <p className="rounded-2xl border border-accent/40 bg-accent-soft/60 px-4 py-3 text-sm">
+          Tu devolución destacó: <b>{riasec.map((k) => RIASEC[k]).join(", ")}</b>. Elegí el área que más se parezca a lo que te gusta; cada una muestra a
+          qué tipo se acerca.
+        </p>
+      )}
 
       <Paso n={1} title="Área de interés" hint="La dirección que salió de tu charla, no una carrera">
         <Opciones
@@ -115,14 +115,14 @@ export default function Explorador() {
             <select id="f-mode" value={filtros.mode} onChange={(e) => setF({ mode: e.target.value as Filtros["mode"] })} className={selectClass}>
               <option value="any">Cualquiera</option>
               <option value="presencial">Presencial</option>
-              <option value="hibrida">Híbrida</option>
+              <option value="hibrida">Híbrida o semipresencial</option>
               <option value="distancia">A distancia</option>
             </select>
           </Campo>
         </div>
       </Paso>
 
-      <Resultados sel={sel} filtros={filtros} carrera={carrera} lugar={lugar} onReset={() => setFiltros(FILTROS_INICIALES)} onAllCareers={() => set({ career: null })} onGoUruguay={() => set({ region: "uy", country: null })} />
+      <Resultados sel={sel} filtros={filtros} carrera={carrera} lugar={lugar} onFiltros={setF} onReset={() => setFiltros(FILTROS_INICIALES)} onAllCareers={() => set({ career: null })} onGoUruguay={() => set({ region: "uy", country: null })} />
     </div>
   );
 }
@@ -177,7 +177,7 @@ function Campo({ id, label, help, children }: { id: string; label: string; help?
   );
 }
 
-function Resultados(props: { sel: Seleccion; filtros: Filtros; carrera: string; lugar: string; onReset: () => void; onAllCareers: () => void; onGoUruguay: () => void }) {
+function Resultados(props: { sel: Seleccion; filtros: Filtros; carrera: string; lugar: string; onFiltros: (p: Partial<Filtros>) => void; onReset: () => void; onAllCareers: () => void; onGoUruguay: () => void }) {
   const { sel, filtros, carrera, lugar } = props;
   const fuentes = fuentesBecas(sel);
   const hayFiltros = filtros.budget !== "any" || filtros.becas || filtros.lang !== "any" || filtros.mode !== "any";
@@ -192,10 +192,7 @@ function Resultados(props: { sel: Seleccion; filtros: Filtros; carrera: string; 
           Todavía no tenemos un catálogo de {otroArea ? area.label : carrera} en {lugar}.
         </p>
         <Vacio title={`Todavía no tenemos programas de ${otroArea ? area.label : carrera} en ${lugar}`}>
-          <p>
-            Por ahora el catálogo cubre solo Uruguay, en Tecnología y datos y en Organizar y emprender. Preferimos no mostrarte nada antes que
-            opciones que no podemos respaldar.
-          </p>
+          <p>Por ahora el catálogo cubre solo carreras de Uruguay. Preferimos no mostrarte nada antes que opciones que no podemos respaldar.</p>
           {sel.region !== "uy" && !otroArea && (
             <button type="button" onClick={props.onGoUruguay} className={`mt-1 min-h-11 rounded-full border border-border bg-background px-5 font-medium ${FOCUS}`}>
               Ver {carrera} en Uruguay
@@ -216,6 +213,8 @@ function Resultados(props: { sel: Seleccion; filtros: Filtros; carrera: string; 
     r.excluded.length ? `${r.excluded.length} no ${r.excluded.length === 1 ? "cumple" : "cumplen"}` : "",
   ].filter(Boolean);
   const motivos = [...new Set(r.excluded.flatMap((e) => e.checks.filter((c) => c.value === "no").map((c) => c.label)))];
+  // Sin coincidencias: qué filtro conviene quitar, con cuántos programas quedarían.
+  const quitar = coinciden ? [] : alivios(sel, filtros);
 
   return (
     <section aria-labelledby="h-res" className="grid gap-6">
@@ -256,14 +255,22 @@ function Resultados(props: { sel: Seleccion; filtros: Filtros; carrera: string; 
           <Vacio title="Ningún programa confirma tus filtros con la información publicada">
             <p>
               {r.incomplete.length
-                ? "Las fuentes no publican algunos de los datos que filtraste. Podés ver esos programas abajo, marcados como información incompleta."
-                : "Probá quitar algún filtro o mirar todas las carreras del área."}
+                ? "Las fuentes no publican algunos de los datos que filtraste. Los programas están abajo, marcados como información incompleta."
+                : "Ningún programa de esta búsqueda cumple esos filtros."}
+              {quitar.length > 0 && " Podés quitar un filtro:"}
             </p>
-            {sel.career && !r.incomplete.length && (
-              <button type="button" onClick={props.onAllCareers} className={`mt-1 min-h-11 rounded-full border border-border bg-background px-5 font-medium ${FOCUS}`}>
-                Ver todas las carreras del área
-              </button>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {quitar.map((q) => (
+                <button key={q.key} type="button" onClick={() => props.onFiltros(q.patch)} className={`min-h-11 rounded-full border border-border bg-background px-4 font-medium ${FOCUS}`}>
+                  Quitar «{q.label}» ({q.n})
+                </button>
+              ))}
+              {sel.career && (
+                <button type="button" onClick={props.onAllCareers} className={`min-h-11 rounded-full border border-border bg-background px-4 font-medium ${FOCUS}`}>
+                  Ver todas las carreras del área
+                </button>
+              )}
+            </div>
           </Vacio>
         )}
       </div>
@@ -354,7 +361,13 @@ function Tarjeta({ r }: { r: Resultado }) {
       <div className="mt-auto grid gap-1 border-t border-border pt-3 text-xs text-muted">
         {f.pendientes.length > 0 && <span>Faltan en la fuente: {f.pendientes.join(", ")}</span>}
         <span>Comprobado el {fecha(f.fecha_verificacion)}</span>
-        <a href={f.url_programa} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline ${FOCUS}`}>
+        {f.url_nota && <span>{f.url_nota}</span>}
+        <a
+          href={f.url_programa}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`mt-1 inline-flex min-h-11 items-center justify-center rounded-full border border-accent px-5 text-sm font-medium text-accent transition hover:bg-accent hover:text-background ${FOCUS}`}
+        >
           Ver la página oficial de la carrera <span aria-hidden>&nbsp;↗</span>
           <span className="sr-only"> (se abre en otra pestaña)</span>
         </a>
@@ -404,4 +417,21 @@ function Fuentes({ fuentes }: { fuentes: ReturnType<typeof fuentesBecas> }) {
       </ul>
     </div>
   );
+}
+
+type Alivio = { key: keyof Filtros; label: string; patch: Partial<Filtros>; n: number };
+/** Para cada filtro activo, cuántos programas coincidirían si se quita. Solo se ofrecen los que dan resultados. */
+function alivios(sel: Seleccion, filtros: Filtros): Alivio[] {
+  const opciones: Omit<Alivio, "n">[] = [];
+  if (filtros.budget !== "any") opciones.push({ key: "budget", label: filtros.budget === "free" ? "Matrícula gratuita" : "Gratuita o con beca", patch: { budget: "any" } });
+  if (filtros.becas) opciones.push({ key: "becas", label: "Solo con beca confirmada", patch: { becas: false } });
+  if (filtros.lang !== "any") opciones.push({ key: "lang", label: `Idioma ${LANG_LABEL[filtros.lang]}`, patch: { lang: "any" } });
+  if (filtros.mode !== "any") opciones.push({ key: "mode", label: `Modalidad ${MODE_LABEL[filtros.mode]}`, patch: { mode: "any" } });
+  return opciones
+    .map((o) => {
+      const r = buscar(sel, { ...filtros, ...o.patch });
+      return { ...o, n: r.direct.length + r.related.length };
+    })
+    .filter((o) => o.n > 0)
+    .sort((a, b) => b.n - a.n);
 }

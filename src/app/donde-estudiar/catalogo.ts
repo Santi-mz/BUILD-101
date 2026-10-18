@@ -33,6 +33,7 @@ export type Programa = {
   requisitos_ingreso: string;
   inscripciones: string;
   url_programa: string;
+  url_nota?: string;
   fecha_verificacion: string;
   pendientes: string[];
 };
@@ -42,15 +43,21 @@ export const CATALOGO = data as { version: string; fecha_verificacion: string; p
 export type Modo = "presencial" | "hibrida" | "distancia";
 export type Area = { id: string; label: string; riasec: string; careers: string[] };
 
-/** Áreas de interés (las mismas direcciones RIASEC de la devolución). Solo dos tienen catálogo por ahora. */
+/** Áreas de interés. La etiqueta RIASEC es orientativa: la equivalencia con la devolución todavía no está aprobada. */
 export const AREAS: Area[] = [
   { id: "tec", label: "Tecnología y datos", riasec: "Investigador · Convencional", careers: ["Ingeniería en Computación", "Ciencia de Datos", "Tecnologías de la Información"] },
   { id: "emp", label: "Organizar y emprender", riasec: "Emprendedor", careers: ["Economía", "Administración y negocios", "Marketing", "Contador Público"] },
-  { id: "cre", label: "Diseño, audio y creación", riasec: "Artístico", careers: [] },
-  { id: "per", label: "Enseñar, cuidar y acompañar", riasec: "Social", careers: [] },
-  { id: "man", label: "Hacer con las manos", riasec: "Realista", careers: [] },
+  { id: "per", label: "Enseñar, cuidar y acompañar", riasec: "Social", careers: ["Enfermería", "Psicología", "Trabajo social", "Educación"] },
+  { id: "cre", label: "Diseño, audio y creación", riasec: "Artístico", careers: ["Música", "Comunicación", "Contenidos digitales"] },
+  { id: "man", label: "Hacer con las manos", riasec: "Realista", careers: ["Mecatrónica y automatización", "Energías renovables", "Ingeniería civil", "Ingeniería mecánica"] },
 ];
-const AREA_DEL_CATALOGO: Record<string, string> = { "Tecnología y datos": "tec", "Organizar y emprender": "emp" };
+const AREA_DEL_CATALOGO: Record<string, string> = {
+  "Tecnología y datos": "tec",
+  "Organizar y emprender": "emp",
+  "Enseñar, cuidar y acompañar": "per",
+  "Diseño, audio y creación": "cre",
+  "Hacer con las manos": "man",
+};
 
 export type Region = { id: string; label: string; countries: string[] };
 export const REGIONS: Region[] = [
@@ -91,6 +98,21 @@ const ATRIBUTOS: Record<string, Atributos> = {
   "um-direccion-administracion-empresas": { direct: ["Administración y negocios"], related: [], tuition: "unknown", modes: null },
   "ude-lic-administracion-empresas": { direct: ["Administración y negocios"], related: [], tuition: "unknown", modes: null },
   "ude-lic-marketing": { direct: ["Marketing"], related: [], tuition: "unknown", modes: null },
+  "udelar-psicologia-licenciatura": { direct: ["Psicología"], related: [], tuition: "free", modes: null },
+  "udelar-cure-enfermeria-rocha": { direct: ["Enfermería"], related: [], tuition: "free", modes: ["presencial"] },
+  "ucu-licenciatura-enfermeria": { direct: ["Enfermería"], related: [], tuition: "unknown", modes: ["presencial"] },
+  "ucu-licenciatura-trabajo-social": { direct: ["Trabajo social"], related: [], tuition: "unknown", modes: ["presencial"] },
+  "ucu-licenciatura-educacion": { direct: ["Educación"], related: [], tuition: "unknown", modes: ["presencial"] },
+  // Las fuentes de UTEC dicen "semipresencial": cuenta como híbrida.
+  "utec-lic-jazz-musica-creativa": { direct: ["Música"], related: [], tuition: "unknown", modes: ["hibrida"] },
+  "utec-tec-comunicacion-creativa": { direct: ["Contenidos digitales"], related: ["Comunicación"], tuition: "unknown", modes: ["hibrida"] },
+  "udelar-fic-licenciatura-comunicacion": { direct: ["Comunicación"], related: [], tuition: "free", modes: null },
+  "ucu-licenciatura-comunicacion": { direct: ["Comunicación"], related: [], tuition: "unknown", modes: ["presencial"] },
+  "utec-ingenieria-mecatronica": { direct: ["Mecatrónica y automatización"], related: [], tuition: "unknown", modes: ["hibrida"] },
+  "utec-ingenieria-control-automatica": { direct: ["Mecatrónica y automatización"], related: [], tuition: "unknown", modes: ["presencial"] },
+  "utec-ingenieria-energias-renovables": { direct: ["Energías renovables"], related: [], tuition: "unknown", modes: ["presencial"] },
+  "udelar-fing-ingenieria-civil": { direct: ["Ingeniería civil"], related: [], tuition: "free", modes: null },
+  "udelar-fing-ingenieria-industrial-mecanica": { direct: ["Ingeniería mecánica"], related: ["Mecatrónica y automatización"], tuition: "free", modes: null },
 };
 
 export type Ficha = Programa & Atributos & {
