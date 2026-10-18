@@ -1,5 +1,5 @@
 import { v2Defaults } from "./defaults";
-import { optionById, RUBRIC_VERSION, type Area, type Axis } from "@/lib/rubric";
+import { optionById, optionByLabel, RUBRIC_VERSION, type Area, type Axis } from "@/lib/rubric";
 import { logEvent } from "@/lib/events";
 import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ANALYZER_PROMPT_VERSION } from "@/prompts/analyzer.v1";
@@ -321,7 +321,9 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
   let quality: AnswerQuality = "RICH";
   const shortReply = text.split(/\s+/).length <= 6;
 
-  const option = opts.optionId ? s.lastOptions?.find((o) => o.id === opts.optionId) : undefined;
+  // Un botón tocado, o el texto exacto de una opción del banco escrito a mano (o dictado).
+  const typed = !opts.optionId ? optionByLabel(text) : undefined;
+  const option = opts.optionId ? s.lastOptions?.find((o) => o.id === opts.optionId) : typed ? { id: typed.id, label: typed.label } : undefined;
   if (option?.id === ONE_MORE.id) {
     // "Una pregunta más" en la oferta de cierre.
     s.offerAccepted = true;

@@ -183,3 +183,7 @@ export const optionsOf = (slot: SlotId): Option[] => optionBank.slots[slot];
 export const commonOptions = (): Option[] => optionBank.slots.COMMON;
 /** Una opción del banco por id, con el casillero al que pertenece. */
 export const optionById = (id: string) => optionsById.get(id);
+/** Una opción del banco por su texto exacto (sin mayúsculas ni tildes): por si la persona lo escribe en vez de tocarlo. */
+const normLabel = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[.!¡¿?\s]+/g, " ").trim();
+const optionsByLabel = new Map([...optionsById.values()].filter((o) => !o.noInfo).map((o) => [normLabel(o.label), o]));
+export const optionByLabel = (text: string) => optionsByLabel.get(normLabel(text));
