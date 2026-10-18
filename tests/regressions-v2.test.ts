@@ -147,3 +147,17 @@ describe("con Gemini en producción (18/10, 07 UTC)", () => {
     if (/entender cómo funcionan/.test(text)) expect(text).not.toMatch(/panadería/);
   });
 });
+
+describe("mini-resumen y «no entiendo» (producción, 18/10)", () => {
+  test("«no entiendo» después del mini-resumen no lo toma como rechazo", async () => {
+    const s = await start();
+    await runTurn(provider, s, "Me gusta dibujar, una vez dibujé un mural en el liceo");
+    await runTurn(provider, s, "también pinto cuadros en mi casa");
+    s.messages.push({ id: "m", role: "ASSISTANT", content: "Hasta acá veo que te tira crear. ¿Va por ahí?", action: { type: "MINI_SUMMARY", level: 2 }, createdAt: "" });
+    s.lastAction = { type: "MINI_SUMMARY", level: 2 };
+    s.miniSummaryDone = true;
+    await runTurn(provider, s, "no entiendo");
+    expect(s.evidence.some((e) => e.area === "A" && e.status === "REJECTED")).toBe(false);
+    // (El rechazo real, «No, no es así», está cubierto en turn-v2.test.ts.)
+  });
+});
