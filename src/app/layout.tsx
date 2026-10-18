@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -38,9 +39,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <nav aria-label="Principal" className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
             <Link
               href="/"
-              className="-ml-2 inline-flex h-11 items-center rounded-full px-2 text-lg font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="-ml-2 inline-flex h-11 items-center gap-2 rounded-full px-2 text-lg font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Rumbo<span className="text-accent">.</span>
+              {/* Símbolo decorativo: el nombre de la marca ya es el texto del enlace. 28 px entra en los 44 px del enlace. */}
+              <Image src="/rumbo-icono-64.png" alt="" width={28} height={28} preload unoptimized className="h-7 w-7" />
+              <span>
+                Rumbo<span className="text-accent">.</span>
+              </span>
             </Link>
             <Suspense fallback={<NavFallback />}>
               <NavLinks />
