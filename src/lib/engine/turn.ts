@@ -271,7 +271,8 @@ export async function runTurn(provider: LLMProvider, s: SessionState, rawText: s
 // ---------------------------------------------------------------------------------------------
 const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
 const NO_INFO_TEXT = /^(no se|nose|ni idea|depende|capaz|puede ser|que se yo|paso|nada|ninguna|ninguno|no me interesa|no tengo idea|no)[.!?\s]*$/;
-const SUMMARY_REJECT = /^(no|nop|nope)\b|\bno es asi\b|\bno me representa\b|^para nada|^nada que ver/;
+// "no" solo, o "no," / "no." seguido de algo; NO "no entiendo" ni "no sé" (eso no es rechazar el resumen).
+const SUMMARY_REJECT = /^(no|nop|nope)[.!]*$|^(no|nop|nope)[,.!] |\bno es asi\b|\bno me representa\b|^para nada|^nada que ver/;
 const SUMMARY_PARTIAL = /\b(mas o menos|masomenos|en parte|algo asi|mas bien no)\b/;
 const SUMMARY_CONFIRM = /^(si|sii+|exacto|tal cual|me representa|dale|obvio|claro|totalmente|correcto)\b/;
 /** Respuesta afirmativa a la oferta de cierre: quiere ver el perfil. */
@@ -335,7 +336,7 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
     applyAnalysis(s, optionOutput(option.label, bank?.evidence ?? [], noInfo), msgId, option.label);
     if (bank?.marksDone && bank.group !== "COMMON") s.askedCount[`done:${bank.group}`] = 1;
     if (prev?.type === "MINI_SUMMARY") resolveMiniSummary(s, option.label);
-  } else if (prev?.type === "MINI_SUMMARY" && shortReply && resolveMiniSummary(s, text)) {
+  } else if (prev?.type === "MINI_SUMMARY" && shortReply && !intent && resolveMiniSummary(s, text)) {
     // "Sí" / "Más o menos" / "No" al mini-resumen: no hace falta el analizador.
   } else if (prev?.type === "OFFER_CLOSE" && shortReply) {
     // "¿Lo vemos ahora o preferís una pregunta más?" → "sí", "dale", "ok" es verlo; lo demás, una pregunta más.
@@ -350,7 +351,7 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
     const { output, fallback } = await analyze(llm, s, text);
     if (output.risk.flag) return safetyStop(s, msgId, output.risk.category ?? "MALESTAR_INTENSO");
     applyAnalysis(s, output, msgId, text);
-    if (prev?.type === "MINI_SUMMARY") resolveMiniSummary(s, text);
+    if (prev?.type === "MINI_SUMMARY" && !intent) resolveMiniSummary(s, text);
     const added = s.evidence.length > before;
     quality = intent ? "OFF_TOPIC" : output.answerQuality;
     // Un fallo del LLM cuenta como "sin información" solo si el analizador por reglas tampoco sacó nada.
