@@ -159,6 +159,26 @@ export default function Result() {
         )}
       </section>
 
+      {/* Etapa 2: «Dónde estudiar» (catálogo real de Uruguay). Contrato del README de /donde-estudiar: solo las letras
+          destacadas (?riasec=), sin elegir el área por la persona; sin letras o con perfil provisional, sin promesas. */}
+      {done && (
+        <section className="rounded-2xl border-2 border-accent bg-accent-soft p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Etapa 2</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight">¿Dónde estudiarlo?</h2>
+          <p className="mt-2 text-sm text-muted">
+            {p.top.length && !p.provisional
+              ? "Con lo que charlamos, mirá carreras y programas reales de Uruguay, cada uno con su página oficial."
+              : "Mirá carreras y programas reales de Uruguay, cada uno con su página oficial."}
+          </p>
+          <Link
+            href={p.top.length ? `/donde-estudiar?riasec=${p.top.join(",")}` : "/donde-estudiar"}
+            className="mt-4 inline-block rounded-full bg-accent px-6 py-3 font-medium text-background"
+          >
+            Ver dónde estudiar →
+          </Link>
+        </section>
+      )}
+
       <section className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-semibold">Para explorar en la vida real</h2>
         <ol className="mt-3 list-inside list-decimal space-y-2 text-sm">{actions.map((a) => <li key={a}>{a}</li>)}</ol>
