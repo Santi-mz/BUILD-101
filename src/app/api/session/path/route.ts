@@ -27,5 +27,5 @@ export async function POST(req: Request) {
       return;
     }
     if (!selectPath(s, input.pathId)) return fail(404, "not_found", "No encontré esa ruta.");
-  });
+  }, req);
 }
