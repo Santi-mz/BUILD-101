@@ -106,6 +106,14 @@ describe("no repetir ni pedir ejemplos sin sentido", () => {
     expect(out.action.type).not.toBe("ASK_DEEPEN");
   });
 
+  test("un hábito con amigos es concreto aunque no venga después de otro pedido de ejemplo (producción, 18/10)", async () => {
+    const s = await start();
+    await talk(s, ["no sé qué estudiar", "sí"]);
+    const out = await runTurn(down, s, "Con mis amigos, todos los viernes");
+    expect(out.action.type).not.toBe("ASK_DEEPEN");
+    expect(s.evidence.some((e) => e.indicatorId === "N1.PERSONAS" && e.concrete)).toBe(true);
+  });
+
   test("nunca pide episodios sobre el estado de decisión (nivel 0)", async () => {
     const s = await start();
     await talk(s, ["todo abierto", "bo", "no ser feliz", "tengo idea de qué quiero hacer"]);
