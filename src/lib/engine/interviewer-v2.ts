@@ -86,10 +86,15 @@ const lastUser = (s: SessionState) => [...s.messages].reverse().find((m) => m.ro
 /** Texto fijo del mini-resumen: las áreas que más aparecieron, en lenguaje llano, con una cita. */
 export function miniSummaryText(s: SessionState) {
   const areas = topAreas(active(s), 2);
-  const support = active(s).find((e) => e.polarity === 1 && e.area === areas[0]);
   if (!areas.length) return "Hasta acá todavía veo poco, y está bien. ¿Te parece que sigamos un poco más?";
+  // La cita: mejor algo que escribió con sus palabras (y concreto) que el texto de un botón.
+  const fromOption = (e: { rationale: string }) => e.rationale.startsWith("Opción elegida");
+  const support = active(s)
+    .filter((e) => e.polarity === 1 && (e.area === areas[0] || e.indicatorId.startsWith("N3.")))
+    .sort((x, y) => Number(fromOption(x)) - Number(fromOption(y)) || Number(y.concrete) - Number(x.concrete))[0];
   const what = areas.map((a) => AREA_PLAIN[a]).join(" y ");
-  return `Hasta acá veo que te tira ${what}${support ? `, por ejemplo cuando dijiste "${shortQuote(support.quote)}"` : ""}. ¿Va por ahí?`;
+  const cite = support ? `, por ejemplo cuando ${fromOption(support) ? "elegiste" : "dijiste"} "${shortQuote(support.quote)}"` : "";
+  return `Hasta acá veo que te tira ${what}${cite}. ¿Va por ahí?`;
 }
 
 export function templateV2(s: SessionState, a: Action): string {

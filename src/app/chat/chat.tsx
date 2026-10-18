@@ -42,12 +42,12 @@ export default function Chat() {
     bottom.current?.scrollIntoView({ behavior: "smooth" });
   }, [view?.messages.length, pending]);
 
-  const send = useCallback(async (message: string, close = false) => {
+  const send = useCallback(async (message: string, close = false, optionId?: string) => {
     setBusy(true);
     setError("");
     setPending(message);
     stopSpeaking();
-    const r = await call("/api/chat", { body: { message, close } });
+    const r = await call("/api/chat", { body: { message, close, optionId } });
     setPending(null);
     setBusy(false);
     if (r.error) {
@@ -114,7 +114,11 @@ export default function Chat() {
 
   const done = view.status === "COMPLETED";
   const lastIsAssistant = view.messages.at(-1)?.role === "ASSISTANT";
-  const quick = view.pendingConfirmation && lastIsAssistant && !busy ? ["Sí, me representa", "Más o menos", "No, no es así"] : [];
+  const v2 = view.maxQuestions != null;
+  // v1: botones de confirmación del resumen. v2: las opciones del último mensaje (vienen del banco, design.md §8).
+  const quick = !v2 && view.pendingConfirmation && lastIsAssistant && !busy ? ["Sí, me representa", "Más o menos", "No, no es así"] : [];
+  const chips = v2 && lastIsAssistant && !busy && !done ? view.options : [];
+  const choose = (o: { id: string; label: string }) => (o.id === "see_profile" ? send(o.label, true) : send(o.label, false, o.id));
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-57px)] max-w-6xl gap-6 px-4">
@@ -143,7 +147,7 @@ export default function Chat() {
           )}
           {done && (
             <Link href="/resultado" className="block rounded-2xl bg-accent-soft p-4 text-center font-medium text-accent">
-              Ver lo que entendí y explorar caminos →
+              {view.provisional ? "Ver mi perfil (provisional: charlamos poco) →" : "Ver mi perfil y explorar caminos →"}
             </Link>
           )}
           {error && <p className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
@@ -158,6 +162,21 @@ export default function Chat() {
 
         {!done && (
           <div className="space-y-3 border-t border-border py-4">
+            {chips.length > 0 && (
+              <div className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto sm:max-h-none sm:gap-2" role="group" aria-label="Opciones de respuesta">
+                {chips.map((o) => (
+                  <button
+                    key={o.id}
+                    onClick={() => choose(o)}
+                    className={`rounded-full border px-3 py-1.5 text-[13px] leading-tight transition sm:px-4 sm:py-2 sm:text-sm ${
+                      o.id === "none" || o.id === "skip" ? "border-border text-muted hover:border-accent" : "border-accent text-accent hover:bg-accent-soft"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {quick.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {quick.map((q) => (
@@ -194,7 +213,7 @@ export default function Chat() {
                 readOnly={recording}
                 disabled={busy && !recording}
                 maxLength={2000}
-                placeholder={recording ? "Grabando… tocá el cuadrado para terminar" : "Escribí o tocá el micrófono…"}
+                placeholder={recording ? "Grabando… tocá el cuadrado para terminar" : v2 ? "O escribilo con tus palabras…" : "Escribí o tocá el micrófono…"}
                 className="min-w-0 flex-1 rounded-xl border border-border bg-card px-4 py-3 outline-none focus:border-accent disabled:opacity-60"
               />
               <button disabled={busy} className="rounded-xl bg-accent px-5 font-medium text-background disabled:opacity-60">
@@ -227,7 +246,7 @@ export default function Chat() {
               </button>
               {view.canClose && (
                 <button disabled={busy} onClick={() => send("Quiero terminar y ver lo que entendiste.", true)} className="text-muted underline-offset-4 hover:underline disabled:opacity-60">
-                  Terminar y ver lo que entendí
+                  {v2 ? "Ver mi perfil ahora" : "Terminar y ver lo que entendí"}
                 </button>
               )}
               {view.mode.llm === "mock" && <span className="ml-auto rounded-full border border-border px-2 py-0.5 text-xs text-muted">Modo demo sin IA</span>}
@@ -252,6 +271,25 @@ export default function Chat() {
 }
 
 function Stages({ view, onPanel, panelCount }: { view: View; onPanel: () => void; panelCount: number }) {
+  // v2: progreso por preguntas ("Pregunta N de 8 como máximo"), no por etapas.
+  if (view.maxQuestions != null) {
+    const n = Math.min(view.questionsAsked, view.maxQuestions);
+    return (
+      <div className="border-b border-border py-3">
+        <p className="text-xs text-muted sm:text-sm" aria-live="polite">
+          {view.status === "COMPLETED" ? "Listo: tu perfil está armado" : `Pregunta ${n} de ${view.maxQuestions} como máximo`}
+        </p>
+        <div className="mt-1.5 flex gap-1" aria-hidden>
+          {Array.from({ length: view.maxQuestions }, (_, i) => (
+            <span key={i} className={`h-1 flex-1 rounded-full ${i < n || view.status === "COMPLETED" ? "bg-accent" : "bg-accent-soft"}`} />
+          ))}
+        </div>
+        <button onClick={onPanel} className="mt-2 text-sm text-accent underline-offset-4 hover:underline lg:hidden">
+          Lo que voy entendiendo ({panelCount})
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="border-b border-border py-3">
       <ol className="flex items-center gap-1 text-xs sm:text-sm" aria-label="Etapas">
@@ -330,8 +368,8 @@ function Onboarding({ onStart }: { onStart: (v: View) => void }) {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">No hace falta que tengas todo claro. Vamos a explorar juntos.</h1>
       <div className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-5 text-sm leading-relaxed">
         <p>
-          <b>Qué es:</b> una charla con una IA que te hace preguntas para entender qué te gusta, qué te importa y qué tenés que tener en cuenta. Lleva entre
-          15 y 25 minutos. Al final ves lo que entendió y, si querés, caminos para investigar.
+          <b>Qué es:</b> una charla con una IA que te hace preguntas para entender qué te gusta, qué te importa y qué tenés que tener en cuenta. Son unos 5
+          minutos y como máximo 8 preguntas, casi todas con opciones para tocar. Al final ves lo que entendió y, si querés, caminos para investigar.
         </p>
         <p>
           <b>Qué no es:</b> no es un test, no decide por vos y no reemplaza a un orientador o a un psicólogo.
