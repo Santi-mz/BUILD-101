@@ -30,7 +30,9 @@ jobs:
           node-version: 24
       - run: npx --yes $VERCEL_CLI pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - run: npx --yes $VERCEL_CLI build --prod --token=${{ secrets.VERCEL_TOKEN }}
-      - run: npx --yes $VERCEL_CLI deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      # --archive=tgz: sube un solo archivo comprimido. El plan gratis de Vercel limita a 5000 archivos subidos por día
+      # y con muchos deploys en una noche se agota ("api-upload-free").
+      - run: npx --yes $VERCEL_CLI deploy --prebuilt --prod --archive=tgz --token=${{ secrets.VERCEL_TOKEN }}
 
   preview:
     # Los PRs desde forks no reciben secretos; solo ramas de este repo.
@@ -48,7 +50,7 @@ jobs:
       - run: npx --yes $VERCEL_CLI build --token=${{ secrets.VERCEL_TOKEN }}
       - id: deploy
         run: |
-          echo "url=$(npx --yes $VERCEL_CLI deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
+          echo "url=$(npx --yes $VERCEL_CLI deploy --prebuilt --archive=tgz --token=${{ secrets.VERCEL_TOKEN }})" >> "$GITHUB_OUTPUT"
       - name: Comentar la URL en el PR
         env:
           GH_TOKEN: ${{ github.token }}
