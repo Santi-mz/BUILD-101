@@ -2,6 +2,8 @@ import { indicator, levelOf } from "@/lib/rubric";
 import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ACTION_GUIDE, INTERVIEWER_SYSTEM } from "@/prompts/interviewer.v1";
 import { INTENT_GUIDE } from "./intents";
+import { writeV2 } from "./interviewer-v2";
+import { isV2 } from "./planner-v2";
 import { check, type GuardMode } from "./guards";
 import { evidenceOfLevel, panelLabel } from "./profile";
 import type { Action, Evidence, SessionState } from "./types";
@@ -91,6 +93,8 @@ Escribí solo el mensaje.`;
 }
 
 export async function write(provider: LLMProvider, s: SessionState, a: Action): Promise<{ text: string; source: "llm" | "retry" | "template" }> {
+  // v2 (demo): texto corto, opciones aparte y plantillas fijas para mini-resumen, oferta de cierre y opciones.
+  if (isV2(s)) return writeV2(provider, s, a);
   const mode = modeFor(a);
   const said = userTextOf(s);
   if (provider.name === "mock") return { text: safeTemplate(s, a, mode, said), source: "template" };

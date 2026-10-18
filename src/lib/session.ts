@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { AREAS, STAGES, levelOf } from "@/lib/rubric";
 import { panelItems, snapshot } from "@/lib/engine/profile";
-import { closeReady } from "@/lib/engine/planner";
+import { closeReady, isV2, MAX_QUESTIONS } from "@/lib/engine/planner";
 import type { SessionState } from "@/lib/engine/types";
 import { NEXT_STEPS, suggestedFilters } from "@/lib/agents/pathways";
 import { pathDetails } from "@/lib/agents/pathways";
@@ -56,8 +56,15 @@ export function publicView(s: SessionState) {
     levelName: levelOf(Math.min(3, s.currentLevel)).name,
     userTurns: s.userTurns,
     pendingConfirmation: Boolean(s.pendingConfirmation),
-    canClose: s.userTurns >= 4,
+    // v2 (demo): "Ver mi perfil" disponible desde la primera pregunta. v1: desde el turno 4.
+    canClose: isV2(s) ? s.status === "ACTIVE" : s.userTurns >= 4,
     closeReady: closeReady(s),
+    // v2: opciones en botones del último mensaje, progreso y cierre.
+    options: s.status === "ACTIVE" ? (s.lastOptions ?? []) : [],
+    questionsAsked: s.questionsAsked,
+    maxQuestions: isV2(s) ? MAX_QUESTIONS : null,
+    provisional: s.provisional,
+    closeReason: s.closeReason,
     messages: s.messages.map((m) => ({ id: m.id, role: m.role, content: m.content, action: m.action?.type ?? null })),
     panel: panelItems(s),
     profile: snapshot(s),
