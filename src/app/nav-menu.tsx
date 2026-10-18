@@ -55,8 +55,8 @@ export function SiteNav({ signedIn }: { signedIn: boolean }) {
   if (!signedIn) {
     return (
       <div className="flex items-center gap-1">
-        <Link href="/#feed" className={`${TEXT_LINK} hidden sm:inline-flex`}>Noticias</Link>
-        <Link href="/resultado" aria-current={current(pathname, "/resultado")} className={`${TEXT_LINK} hidden sm:inline-flex`}>Mi devolución</Link>
+        <Link href="/#feed" className={`${TEXT_LINK} max-sm:hidden`}>Noticias</Link>
+        <Link href="/resultado" aria-current={current(pathname, "/resultado")} className={`${TEXT_LINK} max-sm:hidden`}>Mi devolución</Link>
         <Link href="/login" aria-current={current(pathname, "/login")} className={TEXT_LINK}>Entrar</Link>
         <Link href="/chat" aria-current={current(pathname, "/chat")} className={PILL_LINK}>
           <span className={PILL}>Explorar</span>
