@@ -12,5 +12,5 @@ export async function POST(req: Request) {
   return withSession(async (s) => {
     if (!setEvidenceStatus(s, input.id, input.status)) return fail(404, "not_found", "No encontré ese dato.");
     logEvent(input.status === "REJECTED" ? "profile.corrected" : "profile.updated", { session: s.id });
-  });
+  }, req);
 }
