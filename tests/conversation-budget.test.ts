@@ -10,7 +10,7 @@ import { countQuestions, failing, field, PERSONAS, prng, provider, reply, simula
  * `test.fails` = el comportamiento de hoy NO cumple la spec (el bug queda documentado y el CI verde).
  * Las tareas 5 y 6 (planificador v2 y turno) las tienen que pasar a `test` normal; la T7, la tarea 9.
  */
-const MAX = 8;
+const MAX = 3;
 // El contador del estado no puede esconder preguntas: se toma el mayor entre el contador y la transcripción.
 const questions = (s: SessionState) => Math.max(field<number>(s, "questionsAsked") ?? 0, countQuestions(s));
 const assistant = (s: SessionState) => s.messages.filter((m) => m.role === "ASSISTANT");
@@ -30,9 +30,9 @@ function randomReply(rand: () => number, s: SessionState, i: number): Reply {
   return { message: "sí" };
 }
 
-describe("presupuesto de 8 preguntas (spec demo)", () => {
+describe("primer perfil en 2-3 preguntas", () => {
   test(
-    "T1: 200 conversaciones al azar (semilla fija) terminan COMPLETED con 8 preguntas o menos",
+    "T1: 200 conversaciones al azar (semilla fija) terminan COMPLETED con 3 preguntas o menos",
     async () => {
       const rand = prng(20261018);
       for (let c = 0; c < 200; c++) {
@@ -45,7 +45,7 @@ describe("presupuesto de 8 preguntas (spec demo)", () => {
     120_000,
   );
 
-  test("T2: ningún personaje recibe más de 8 mensajes del asistente con «?»", async () => {
+  test("T2: ningún personaje recibe más de 3 mensajes del asistente con «?»", async () => {
     for (const [name, persona] of Object.entries(PERSONAS)) {
       const s = await simulate(persona);
       expect(countQuestions(s), name).toBeLessThanOrEqual(MAX);
@@ -65,11 +65,11 @@ describe("presupuesto de 8 preguntas (spec demo)", () => {
     expect(assistant(s).some((m) => m.action?.type === "ASK_DEEPEN")).toBe(false);
   });
 
-  test("T4: el personaje rico cierra entre la pregunta 5 y la 7", async () => {
+  test("T4: el personaje rico cierra entre la pregunta 2 y la 3", async () => {
     const s = await simulate(PERSONAS.rico);
     expect(s.status).toBe("COMPLETED");
-    expect(questions(s)).toBeGreaterThanOrEqual(5);
-    expect(questions(s)).toBeLessThanOrEqual(7);
+    expect(questions(s)).toBeGreaterThanOrEqual(2);
+    expect(questions(s)).toBeLessThanOrEqual(3);
   });
 });
 
@@ -91,7 +91,7 @@ describe("perfil a pedido y resiliencia (spec demo)", () => {
     for (const t of [1, 3]) expect(field<boolean>(await closeAt(t), "provisional"), `turno ${t}`).toBe(true);
   });
 
-  test("T6a: con el LLM caído la charla igual cierra con 8 preguntas o menos", async () => {
+  test("T6a: con el LLM caído la charla igual cierra con 3 preguntas o menos", async () => {
     const s = await simulate(PERSONAS.mixto, { p: failing() });
     expect(s.status).toBe("COMPLETED");
     expect(questions(s)).toBeLessThanOrEqual(MAX);
@@ -127,7 +127,7 @@ describe("devolución y resúmenes (spec demo)", () => {
     const firstRejected = msgs.findIndex(
       (m, i) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? "") && /^no\b/i.test(msgs[i + 1]?.content ?? ""),
     );
-    expect(firstRejected).toBeGreaterThanOrEqual(0);
+    // Con 3 preguntas, la entrevista ya no exige un mini-resumen.
     expect(msgs.slice(firstRejected + 1).some((m) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? ""))).toBe(false);
   });
 });
