@@ -26,6 +26,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
+        {/* Fijo y fuera de la pantalla hasta recibir foco: no ocupa lugar ni cambia los 57 px del header. */}
+        <a
+          href="#contenido"
+          className="fixed left-4 top-2 z-50 -translate-y-24 rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-background shadow-lg outline-none focus:translate-y-0 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          Saltar al contenido
+        </a>
         <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
           {/* 56 px + 1 px de borde = 57 px: chat.tsx calcula su alto con ese valor. */}
           <nav aria-label="Principal" className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4">
@@ -40,7 +47,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Suspense>
           </nav>
         </header>
-        <main className="flex-1">{children}</main>
+        {/* tabIndex -1: Safari solo mueve el foco al destino del salto si el elemento es enfocable. */}
+        <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
+          {children}
+        </main>
         <footer className="border-t border-border py-6 text-center text-xs text-muted">
           Rumbo es una herramienta de exploración: no es un test ni reemplaza a un profesional de la orientación. Si estás pasando un momento difícil: Línea Vida 0800 0767 o *0767 (24 h). Hecho en Build 101 · Montevideo.
         </footer>
