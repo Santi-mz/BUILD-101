@@ -96,3 +96,27 @@ describe("barrido de personalidades (producción, 18/10)", () => {
     expect(quotes.size).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe("detalles de la noche (18/10)", () => {
+  test("escribir el texto exacto de una opción cuenta como tocarla", async () => {
+    const s = await start();
+    await runTurn(provider, s, "Arreglar o armar cosas con las manos");
+    const ev = s.evidence.filter((e) => e.quote === "Arreglar o armar cosas con las manos").map((e) => e.indicatorId).sort();
+    expect(ev).toEqual(["N1.COSAS", "N2.R"]);
+  });
+
+  test("si el mensaje habla de lo que le importa, no le pide «la última vez que lo hiciste»", async () => {
+    const s = await start();
+    const out = await runTurn(provider, s, "Me importa ayudar a otros y que lo que haga sirva para algo");
+    expect(out.action.type).not.toBe("ASK_DEEPEN");
+  });
+
+  test("el miedo se reconoce aunque toque el mini-resumen o la oferta de cierre", async () => {
+    const s = await start();
+    await runTurn(provider, s, "Me encanta dibujar, una vez dibujé un mural en el liceo");
+    await runTurn(provider, s, "Me importa poder crear cosas");
+    const out = await runTurn(provider, s, "Me da miedo elegir mal y arruinarme la vida");
+    if (out.action.type === "MINI_SUMMARY" || out.action.type === "OFFER_CLOSE") expect(out.reply).toMatch(/Es re común tener ese miedo/);
+    else expect(out.reply).toMatch(/Es re común tener ese miedo/);
+  });
+});

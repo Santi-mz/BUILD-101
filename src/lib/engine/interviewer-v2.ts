@@ -125,12 +125,18 @@ export function templateV2(s: SessionState, a: Action): string {
       return `${opener ? opener + " " : ""}${echo ? `Dijiste "${echo}". ` : ""}¿Me contás la última vez que lo hiciste y qué parte te gustó más?`;
     }
     case "MINI_SUMMARY":
-      return miniSummaryText(s);
+      // Si acaba de contar algo que pesa (miedo, presión), se reconoce antes del resumen.
+      return [opener, miniSummaryText(s)].filter(Boolean).join(" ");
     case "OFFER_CLOSE":
       // Honesto: solo dice "ya puedo armarte un perfil" si tiene los imprescindibles (si no, ofrece lo que hay).
-      return essentialsMet(s)
-        ? "Con lo que me contaste ya puedo armarte un perfil. ¿Lo vemos ahora o preferís una pregunta más?"
-        : "Todavía sé poco de vos, pero puedo mostrarte lo que tengo hasta ahora. ¿Lo vemos o preferís una pregunta más?";
+      return [
+        opener,
+        essentialsMet(s)
+          ? "Con lo que me contaste ya puedo armarte un perfil. ¿Lo vemos ahora o preferís una pregunta más?"
+          : "Todavía sé poco de vos, pero puedo mostrarte lo que tengo hasta ahora. ¿Lo vemos o preferís una pregunta más?",
+      ]
+        .filter(Boolean)
+        .join(" ");
     case "ASK_SLOT":
     default: {
       const ack = added && !opener ? pick(["Buenísimo.", "Te sigo.", "Gracias por contarlo.", "Ok, anotado."], s.userTurns) : "";

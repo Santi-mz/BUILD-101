@@ -202,7 +202,9 @@ export function nextV2(s: SessionState): Action {
   // principio. La spec permite uno por indicador; con varios intereses seguidos eso eran 5 pedidos de ejemplo al hilo.
   const deepened = new Set([...(s.deepened ?? []), ...assistants.filter((m) => m.action?.type === "ASK_DEEPEN").map((m) => m.action?.indicatorId)]);
   const interests = (last?.evidence ?? []).filter((e) => e.polarity === 1 && /^N[123]\./.test(e.indicatorId));
-  if (interests.length && !interests.some((e) => e.concrete) && asked <= LIMITS.miniSummaryUntil && deepened.size === 0) {
+  // Si el mensaje habla de lo que le importa ("que sirva para ayudar a otros"), no se le pide "la última vez que lo hiciste".
+  const talksValues = (last?.evidence ?? []).some((e) => e.indicatorId === "N4.VALOR");
+  if (interests.length && !talksValues && !interests.some((e) => e.concrete) && asked <= LIMITS.miniSummaryUntil && deepened.size === 0) {
     const target = interests.find((e) => !deepened.has(e.indicatorId));
     if (target) return { type: "ASK_DEEPEN", level: Number(target.indicatorId.slice(1, 2)), slot: "C3", indicatorId: target.indicatorId, notes: "pedir un ejemplo concreto" };
   }
