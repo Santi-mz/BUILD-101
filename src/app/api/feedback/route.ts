@@ -15,5 +15,5 @@ export async function POST(req: Request) {
   if (input instanceof Response) return input;
   return withSession(async (s) => {
     s.feedback = { ...input, comment: input.comment ? maskPII(input.comment) : undefined, at: new Date().toISOString() };
-  });
+  }, req);
 }
