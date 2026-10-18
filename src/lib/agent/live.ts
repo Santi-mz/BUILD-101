@@ -1,17 +1,34 @@
-import { SYSTEM_PROMPT } from "./prompt";
+import { Type, type FunctionDeclaration } from "@google/genai";
 
-// Modelos de Gemini Live (voz a voz en tiempo real), en orden de preferencia.
+// Modelo de Gemini Live (voz a voz en tiempo real).
 export const LIVE_MODEL = "gemini-3.8-live";
 
-/** Instrucciones del agente en modo voz: las mismas de siempre, adaptadas a conversación hablada. */
-export function liveInstruction(profileSummary: string) {
-  return `${SYSTEM_PROMPT}
+/**
+ * En voz, Gemini Live es solo la voz y el oído: escucha, transcribe y lee en voz alta.
+ * Qué se pregunta, qué se entiende y cuándo se cierra lo sigue decidiendo el motor (runTurn) vía /api/chat,
+ * igual que en el chat escrito.
+ */
+export const LIVE_TOOLS: FunctionDeclaration[] = [
+  {
+    name: "responder",
+    description: "Manda al motor de la entrevista lo que dijo la persona y devuelve el texto exacto que hay que decirle.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        texto: { type: Type.STRING, description: "Lo que dijo la persona, lo más literal posible, en español." },
+        terminar: { type: Type.BOOLEAN, description: "true solo si la persona pidió terminar la charla y ver lo que se entendió." },
+      },
+      required: ["texto"],
+    },
+  },
+];
 
-MODO VOZ (importante): estás hablando en vivo con la persona, no escribiendo.
-- Frases cortas y naturales, como en una charla. Una sola pregunta por vez. Nada de listas ni formato.
-- offer_choices NO existe en este modo: hacé la pregunta en voz y esperá la respuesta.
-- Llamá a update_profile después de cada respuesta del usuario (sin anunciarlo).
-- Si una herramienta te devuelve "[Sistema] El perfil está listo", cerrá como dice la sección Cierre y contale en voz el resultado en tres o cuatro frases.
-- Si no entendiste lo que dijo, pedile que lo repita con otras palabras.
-${profileSummary ? `\nPerfil guardado hasta ahora (seguí desde acá, no repitas lo ya cubierto): ${profileSummary}` : "\nEs la primera charla: presentate en una frase y arrancá."}`;
-}
+export const LIVE_INSTRUCTION = `Sos la voz de Rumbo, una entrevista de orientación vocacional en español rioplatense. Hablás en vivo con una persona joven.
+
+Tu único trabajo es ser la voz de la entrevista. No hacés preguntas propias, no opinás, no recomendás carreras ni das porcentajes.
+- Cada vez que la persona termina de hablar, llamá a la herramienta "responder" con lo que dijo, lo más literal posible.
+- Si pide terminar o ver lo que entendiste, llamá a "responder" con terminar: true.
+- Cuando la herramienta te devuelva "decir", decilo en voz alta palabra por palabra, con tono cálido y natural, sin agregar ni sacar nada.
+- Si la herramienta devuelve un error, decí: "Perdón, se me cortó. ¿Me lo repetís?"
+- Si no entendiste lo que dijo, pedile que lo repita, sin llamar a la herramienta.
+- Si te piden que leas un texto en voz alta, leelo tal cual.`;
