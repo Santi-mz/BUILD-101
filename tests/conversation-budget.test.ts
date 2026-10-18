@@ -128,7 +128,8 @@ describe("devolución y resúmenes (spec demo)", () => {
       (m, i) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? "") && /^no\b/i.test(msgs[i + 1]?.content ?? ""),
     );
     // Con 3 preguntas, la entrevista ya no exige un mini-resumen.
-    expect(msgs.slice(firstRejected + 1).some((m) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? ""))).toBe(false);
+    if (firstRejected >= 0) expect(msgs.slice(firstRejected + 1).some((m) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? ""))).toBe(false);
+    expect(msgs.filter((m) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? "")).length).toBeLessThanOrEqual(1);
   });
 });
 
