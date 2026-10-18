@@ -61,6 +61,8 @@ export default function Result() {
 
   const p = view.profile;
   const done = view.status === "COMPLETED";
+  // v2 (demo, design.md §9): devolución en lenguaje llano, sin porcentajes ni ejes.
+  const v2 = view.maxQuestions != null || process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const actions = realLifeActions(p.top as Area[], p.flat);
 
   return (
@@ -68,8 +70,15 @@ export default function Result() {
       <section>
         <p className="text-sm text-muted">{done ? "Tu devolución" : "Exploración en curso"}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">Esto entendí hasta ahora</h1>
+        {v2 && p.provisional && (
+          <p className="mt-3 inline-block rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+            Perfil provisional: charlamos poco
+          </p>
+        )}
         <p className="mt-3 text-muted">
-          {p.top.length
+          {v2
+            ? "Lo armé solo con lo que me contaste. "
+            : p.top.length
             ? `En lo que me contaste aparece sobre todo ${p.top.map((a) => p.riasec[a].label.toLowerCase()).join(", ")}. `
             : "Todavía no se destaca un área en particular, y eso no es un problema. "}
           Vos tenés la última palabra: corregí lo que no te represente.
@@ -81,7 +90,26 @@ export default function Result() {
         )}
       </section>
 
-      <section className="rounded-2xl border border-border bg-card p-6">
+      {v2 && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-semibold">Lo que observé</h2>
+          {p.observed.length ? (
+            <ul className="mt-3 space-y-3">
+              {p.observed.map((o) => (
+                <li key={o.text + o.quote}>
+                  <p className="font-medium">{o.text}</p>
+                  <p className="text-sm text-muted">Por lo que dijiste: “{o.quote}”</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-muted">Todavía no se destaca nada en particular, y está bien.</p>
+          )}
+          <p className="mt-4 rounded-xl bg-accent-soft p-3 text-xs text-accent">{p.disclaimer}</p>
+        </section>
+      )}
+
+      <section className={`rounded-2xl border border-border bg-card p-6 ${v2 ? "hidden" : ""}`}>
         <h2 className="font-semibold">Tus intereses</h2>
         {p.show ? (
           <>
@@ -120,9 +148,15 @@ export default function Result() {
         <Card title="Para tener en cuenta" empty="Nada en particular.">
           {[...p.context.barreras, ...p.context.apoyos].map((x) => <li key={x}>{x}</li>)}
         </Card>
-        <Card title="Preguntas abiertas" empty="Ninguna por ahora.">
-          {p.openQuestions.map((q) => <li key={q}>{q}</li>)}
-        </Card>
+        {v2 ? (
+          <Card title="Lo que todavía no sé" empty="Nada importante: charlamos de todo.">
+            {[...p.unknown, ...p.openQuestions].map((q) => <li key={q}>{q}</li>)}
+          </Card>
+        ) : (
+          <Card title="Preguntas abiertas" empty="Ninguna por ahora.">
+            {p.openQuestions.map((q) => <li key={q}>{q}</li>)}
+          </Card>
+        )}
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-6">
