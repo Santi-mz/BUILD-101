@@ -1,11 +1,23 @@
 import { mock, type LLMProvider } from "@/lib/llm/provider";
 import { greet, newSession, runTurn } from "@/lib/engine/turn";
+import { rubricV1 } from "@/lib/rubric";
 import type { SessionState } from "@/lib/engine/types";
 
 export const provider = mock();
 
 export async function start(ageRange: SessionState["ageRange"] = "A18_21", p: LLMProvider = provider) {
   const s = newSession({ ageRange, guardianConsent: false, model: p.model });
+  await greet(p, s);
+  return s;
+}
+
+/**
+ * Sesión con la rúbrica v1 (planificador por niveles). La usan las pruebas que cubren el comportamiento v1
+ * (escenarios E1–E7 del Documento 2 y regresiones de producción previas a la spec de la demo).
+ */
+export async function startV1(ageRange: SessionState["ageRange"] = "A18_21", p: LLMProvider = provider) {
+  const s = newSession({ ageRange, guardianConsent: false, model: p.model });
+  s.rubricVersion = rubricV1.version;
   await greet(p, s);
   return s;
 }

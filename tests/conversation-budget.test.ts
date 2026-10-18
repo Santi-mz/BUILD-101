@@ -31,7 +31,7 @@ function randomReply(rand: () => number, s: SessionState, i: number): Reply {
 }
 
 describe("presupuesto de 8 preguntas (spec demo)", () => {
-  test.fails(
+  test(
     "T1: 200 conversaciones al azar (semilla fija) terminan COMPLETED con 8 preguntas o menos",
     async () => {
       const rand = prng(20261018);
@@ -45,7 +45,7 @@ describe("presupuesto de 8 preguntas (spec demo)", () => {
     120_000,
   );
 
-  test.fails("T2: ningún personaje recibe más de 8 mensajes del asistente con «?»", async () => {
+  test("T2: ningún personaje recibe más de 8 mensajes del asistente con «?»", async () => {
     for (const [name, persona] of Object.entries(PERSONAS)) {
       const s = await simulate(persona);
       expect(countQuestions(s), name).toBeLessThanOrEqual(MAX);
@@ -65,7 +65,7 @@ describe("presupuesto de 8 preguntas (spec demo)", () => {
     expect(assistant(s).some((m) => m.action?.type === "ASK_DEEPEN")).toBe(false);
   });
 
-  test.fails("T4: el personaje rico cierra entre la pregunta 5 y la 7", async () => {
+  test("T4: el personaje rico cierra entre la pregunta 5 y la 7", async () => {
     const s = await simulate(PERSONAS.rico);
     expect(s.status).toBe("COMPLETED");
     expect(questions(s)).toBeGreaterThanOrEqual(5);
@@ -91,7 +91,7 @@ describe("perfil a pedido y resiliencia (spec demo)", () => {
     for (const t of [1, 3]) expect(field<boolean>(await closeAt(t), "provisional"), `turno ${t}`).toBe(true);
   });
 
-  test.fails("T6a: con el LLM caído la charla igual cierra con 8 preguntas o menos", async () => {
+  test("T6a: con el LLM caído la charla igual cierra con 8 preguntas o menos", async () => {
     const s = await simulate(PERSONAS.mixto, { p: failing() });
     expect(s.status).toBe("COMPLETED");
     expect(questions(s)).toBeLessThanOrEqual(MAX);
@@ -121,7 +121,7 @@ describe("devolución y resúmenes (spec demo)", () => {
     expect(unknown?.length).toBe(Object.values(slots).filter((v) => !v).length);
   });
 
-  test.fails("T9: rechazar el resumen no produce otro resumen", async () => {
+  test("T9: rechazar el resumen no produce otro resumen", async () => {
     const s = await simulate(PERSONAS.rechaza, { maxTurns: 20 });
     const msgs = s.messages;
     const firstRejected = msgs.findIndex(
@@ -129,5 +129,23 @@ describe("devolución y resúmenes (spec demo)", () => {
     );
     expect(firstRejected).toBeGreaterThanOrEqual(0);
     expect(msgs.slice(firstRejected + 1).some((m) => m.role === "ASSISTANT" && SUMMARY.has(m.action?.type ?? ""))).toBe(false);
+  });
+});
+
+describe("invariantes del planificador v2 (design.md §4)", () => {
+  test("en todos los personajes: ≤ 2 veces por casillero, ≤ 1 mini-resumen, ≤ 1 profundización y nunca un ejemplo después de «no sé»", async () => {
+    for (const [name, persona] of Object.entries(PERSONAS)) {
+      const s = await simulate(persona);
+      const acts = s.messages.map((m) => ({ role: m.role, type: m.action?.type, slot: m.action?.slot, text: m.content }));
+      const bySlot = new Map<string, number>();
+      for (const a of acts) if (a.role === "ASSISTANT" && a.slot && a.type !== "ASK_DEEPEN") bySlot.set(a.slot, (bySlot.get(a.slot) ?? 0) + 1);
+      for (const [slot, n] of bySlot) expect(n, `${name} ${slot}`).toBeLessThanOrEqual(2);
+      expect(acts.filter((a) => a.type === "MINI_SUMMARY").length, name).toBeLessThanOrEqual(1);
+      expect(acts.filter((a) => a.type === "ASK_DEEPEN").length, name).toBeLessThanOrEqual(1);
+      acts.forEach((a, i) => {
+        if (a.role === "USER" && /^(no se|no sé|depende|capaz|ni idea|paso|no me interesa)$/i.test(a.text)) expect(acts[i + 1]?.type, `${name}: después de «${a.text}»`).not.toBe("ASK_DEEPEN");
+      });
+      expect(s.status, name).toBe("COMPLETED");
+    }
   });
 });

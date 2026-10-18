@@ -1,4 +1,4 @@
-import { RUBRIC_VERSION } from "@/lib/rubric";
+import { rubricV1 } from "@/lib/rubric";
 import { describe, expect, test } from "vitest";
 import { check, questionCount } from "@/lib/engine/guards";
 import { snapshot, setEvidenceStatus, weight } from "@/lib/engine/profile";
@@ -6,10 +6,10 @@ import { SAFETY_MESSAGE } from "@/lib/engine/safety";
 import { runTurn } from "@/lib/engine/turn";
 import { analyze } from "@/lib/engine/analyzer";
 import { LLMUnavailable } from "@/lib/llm/provider";
-import { provider, start, talk } from "./helpers";
+import { provider, startV1, talk } from "./helpers";
 
 /** Verificación automática sobre todas las transcripciones: 0 o 1 pregunta y sin carreras (Documento 2, sección 14). */
-function assertTranscript(s: Awaited<ReturnType<typeof start>>) {
+function assertTranscript(s: Awaited<ReturnType<typeof startV1>>) {
   const said = s.messages.filter((m) => m.role === "USER").map((m) => m.content).join(" ");
   for (const m of s.messages.filter((x) => x.role === "ASSISTANT")) {
     if (m.action?.type === "SAFETY" || m.action?.type === "CLOSE") continue;
@@ -21,7 +21,7 @@ function assertTranscript(s: Awaited<ReturnType<typeof start>>) {
 
 describe("aceptación (blueprint 13) en modo mock", () => {
   test("1. No respuesta genérica: ante 'me gusta la música' pregunta, no receta", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["No sé qué estudiar", "sí"]);
     const [r] = await talk(s, ["Me gusta la música"]);
     expect(questionCount(r.text)).toBe(1);
@@ -30,7 +30,7 @@ describe("aceptación (blueprint 13) en modo mock", () => {
   });
 
   test("2. Memoria: una restricción dicha queda en el perfil y no se vuelve a preguntar", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["No tengo idea", "sí", "Solo puedo cursar de noche porque trabajo de día"]);
     expect(snapshot(s).context.barreras.join(" ")).toMatch(/noche/);
     const at = s.messages.length;
@@ -39,7 +39,7 @@ describe("aceptación (blueprint 13) en modo mock", () => {
   });
 
   test("3. Corrección: 'no es así' descarta la observación y deja de sumar", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["No tengo idea", "sí", "Me encanta programar, una vez hice un juego con un amigo"]);
     const e = s.evidence.find((x) => x.area === "I" || x.area === "A");
     expect(e).toBeDefined();
@@ -48,7 +48,7 @@ describe("aceptación (blueprint 13) en modo mock", () => {
   });
 
   test("Resumen rechazado: vuelve a abrir el nivel y rechaza hipótesis", async () => {
-    const s = await start();
+    const s = await startV1();
     const [r] = await talk(s, ["No tengo idea de qué hacer"]);
     expect(r.action).toBe("SUMMARIZE_LEVEL");
     const before = s.evidence.find((e) => e.indicatorId === "N0.ESTADO")!;
@@ -62,7 +62,7 @@ describe("aceptación (blueprint 13) en modo mock", () => {
 
 describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
   test("E1 muchos intereses: pide experiencias, confirma y no muestra porcentajes con poca evidencia", async () => {
-    const s = await start();
+    const s = await startV1();
     const r = await talk(s, ["Me gusta todo: dibujar, la biología, liderar", "sí"]);
     expect(snapshot(s).show).toBe(false);
     await talk(s, ["Me gusta dibujar", "Una vez dibujé un mural en el liceo con amigos", "Organicé una rifa para el viaje de fin de año", "sí"]);
@@ -76,7 +76,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
   });
 
   test("E2 nada le interesa: no insiste más de 2 veces y cambia de estrategia", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["no sé", "no sé", "no sé", "nada", "no sé", "ni idea"]);
     const asks = s.messages.filter((m) => m.role === "ASSISTANT");
     let streak = 0;
@@ -91,7 +91,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
   });
 
   test("E3 presión familiar: registra la influencia y no toma partido", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["Mis viejos quieren que haga medicina pero a mí me atrae el diseño", "sí", "Una vez diseñé los afiches de la fiesta del liceo"]);
     expect(s.evidence.some((e) => e.indicatorId === "N0.CONF_EXT")).toBe(true);
     for (const m of s.messages.filter((x) => x.role === "ASSISTANT")) expect(m.content).not.toMatch(/tenés que seguir tu pasión|hacé caso/i);
@@ -99,7 +99,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
   });
 
   test("E4 miedo a equivocarse: examina la creencia sin asegurar que todo saldrá bien", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["Si elijo mal arruino mi vida, no sé qué hacer", "sí", "Me gusta ayudar a mi abuela con la huerta"]);
     expect(s.messages.some((m) => m.action?.type === "EXAMINE_BELIEF")).toBe(true);
     for (const m of s.messages.filter((x) => x.role === "ASSISTANT")) expect(m.content).not.toMatch(/todo va a salir bien|seguro te va bien/i);
@@ -107,7 +107,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
   });
 
   test("E5 baja autoeficacia: registra la creencia sin cerrar el área", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["No sé", "sí", "Soy malo para los números"]);
     const e = s.evidence.find((x) => x.indicatorId === "N4.AUTOEF");
     expect(e?.polarity).toBe(-1);
@@ -116,7 +116,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
   });
 
   test("E6 riesgo: detiene la exploración, mensaje de seguridad y SafetyEvent sin el texto", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["No tengo idea"]);
     const out = await runTurn(provider, s, "la verdad es que no quiero vivir más");
     expect(out.safety).toBe(true);
@@ -140,8 +140,8 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
       "sí",
       `Estoy entusiasmad${g} con investigar cómo funcionan los motores`,
     ];
-    const a = await start();
-    const b = await start();
+    const a = await startV1();
+    const b = await startV1();
     await talk(a, script("o"));
     await talk(b, script("a"));
     expect(snapshot(a).riasec).toEqual(snapshot(b).riasec);
@@ -150,7 +150,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
 
 describe("recorrido completo y criterios del MVP", () => {
   test("llega al cierre, no afirma nada sin confirmación y guarda versiones", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, [
       "No tengo idea de qué hacer el año que viene",
       "sí",
@@ -174,15 +174,15 @@ describe("recorrido completo y criterios del MVP", () => {
     expect(s.status).toBe("COMPLETED");
     const snap = snapshot(s);
     for (const v of snap.values) expect(s.evidence.some((e) => e.value === v.id && e.status === "CONFIRMED")).toBe(true);
-    // La sesión guarda la versión de la rúbrica activa (v2 desde la spec de la demo; v1 con RUBRIC_VERSION=1).
-    expect(s.rubricVersion).toBe(RUBRIC_VERSION);
+    // Esta prueba recorre el flujo v1: la sesión guarda la versión de la rúbrica con la que se creó.
+    expect(s.rubricVersion).toBe(rubricV1.version);
     expect(s.promptVersion).toMatch(/analyzer\.v1/);
     expect(s.userTurns).toBeLessThanOrEqual(40);
     assertTranscript(s);
   });
 
   test("datos personales enmascarados antes de guardar", async () => {
-    const s = await start();
+    const s = await startV1();
     await talk(s, ["Me llamo Sofía Rodríguez y mi celular es 098 765 432"]);
     const stored = s.messages.find((m) => m.role === "USER")!.content;
     expect(stored).not.toMatch(/Sofía|098/);
@@ -194,14 +194,14 @@ describe("Gemini caído o lento (casos reales de producción)", () => {
   const down = { name: "gemini" as const, model: "caido", json: async () => { throw new LLMUnavailable("timeout"); }, text: async () => { throw new LLMUnavailable("timeout"); } };
 
   test("el analizador cae a las reglas en vez de quedar vacío", async () => {
-    const s = await start();
+    const s = await startV1();
     const { output, fallback } = await analyze(down, s, "Me gusta armar cosas con las manos y arreglar bicis");
     expect(fallback).toBe(true);
     expect(output.evidence.some((e) => e.indicatorId === "N2.R")).toBe(true);
   });
 
   test("«todo abierto» no recibe un pedido de «una vez puntual»", async () => {
-    const s = await start();
+    const s = await startV1();
     const out = await runTurn(down, s, "todo abierto");
     expect(out.action.type).not.toBe("ASK_DEEPEN");
     expect(out.reply).not.toMatch(/una vez puntual/);
@@ -209,7 +209,7 @@ describe("Gemini caído o lento (casos reales de producción)", () => {
   });
 
   test("confirmar el resumen funciona aunque el LLM no responda", async () => {
-    const s = await start();
+    const s = await startV1();
     await runTurn(down, s, "no tengo ni idea de qué estudiar");
     expect(s.pendingConfirmation).not.toBeNull();
     await runTurn(down, s, "Sí, me representa");
