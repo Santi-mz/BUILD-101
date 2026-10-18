@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AREAS, AXES, type Area, type Axis } from "@/lib/rubric";
+import { AREAS, AXES, type Area, type Axis, type SlotId } from "@/lib/rubric";
 
 // ---------- Salida del analizador (LLM 1), Documento 2 sección 7 ----------
 /** Evidencias máximas por mensaje (después de sacar duplicados): una respuesta rica puede traer muchos intereses. */
@@ -72,7 +72,17 @@ export type ActionType =
   | "ASK_NEW"
   | "EXAMINE_BELIEF"
   | "OFFER_CLOSE"
-  | "GREETING";
+  | "GREETING"
+  // v2 (demo): pregunta de un casillero con opciones, hasta 8 opciones después de un "no sé", y el único mini-resumen.
+  | "ASK_SLOT"
+  | "OFFER_OPTIONS"
+  | "MINI_SUMMARY";
+
+/** Opción en botón tal como la ve la persona (sale del banco options.v1.json). */
+export type OptionRef = { id: string; label: string };
+
+/** Por qué terminó la entrevista (spec demo, Requirement 3.4). */
+export type CloseReason = "user" | "budget" | "sufficient" | "offer_accepted" | "stalled" | "llm_failures";
 
 export type Action = {
   type: ActionType;
@@ -83,6 +93,12 @@ export type Action = {
   setLevel?: number;
   /** Intención de la persona que el mensaje tiene que atender (pedir cerrar, reclamo, confusión, pedir recomendación). */
   intent?: "CLOSE" | "ALREADY_SAID" | "CONFUSED" | "ASK_RECOMMENDATION";
+  /** v2: casillero al que apunta la pregunta. */
+  slot?: SlotId;
+  /** v2: opciones en botones que acompañan la pregunta. */
+  options?: OptionRef[];
+  /** v2: motivo del cierre (solo en CLOSE). */
+  reason?: CloseReason;
 };
 
 export type Message = { id: string; role: "USER" | "ASSISTANT"; content: string; action?: Action; createdAt: string };
@@ -223,4 +239,35 @@ export type SessionState = {
   mentorResult: MentorResult | null;
   nextStep: string | null;
   feedback: { usefulness: number; clarity: number; wouldUseAgain: boolean; comment?: string; at: string } | null;
+} & V2State;
+
+/**
+ * Estado del planificador v2 (spec demo, design.md §3). Todos los campos tienen default en `v2Defaults()`
+ * y las sesiones guardadas antes de la v2 los completan con `withDefaults()` al cargarse.
+ */
+export type V2State = {
+  /** Mensajes del asistente con "?" en la fase de entrevista (tope: rubric.limits.maxQuestions). */
+  questionsAsked: number;
+  /** Respuestas sin información seguidas. */
+  stall: number;
+  /** Fallos seguidos del analizador (LLM). */
+  llmFailures: number;
+  /** Indicador o casillero → veces preguntado (incluye profundizar). */
+  askedCount: Record<string, number>;
+  /** Indicadores ya profundizados ("contame una vez…"): uno solo por indicador. */
+  deepened: string[];
+  miniSummaryDone: boolean;
+  /** Eligió "Una pregunta más" en la oferta de cierre. */
+  offerAccepted: boolean;
+  /** Ya se hizo esa pregunta extra. */
+  extraAsked: boolean;
+  /** Casilleros ya preguntados (E1 cuenta como cumplido al preguntarse). */
+  slotsAsked: SlotId[];
+  /** Pidió el perfil (botón o texto). */
+  closeRequested: boolean;
+  closeReason: CloseReason | null;
+  /** Se cerró sin los casilleros imprescindibles. */
+  provisional: boolean;
+  /** Opciones mostradas en el último mensaje del asistente. */
+  lastOptions: OptionRef[] | null;
 };

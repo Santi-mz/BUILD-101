@@ -1,3 +1,4 @@
+import { v2Defaults } from "./defaults";
 import { RUBRIC_VERSION } from "@/lib/rubric";
 import { logEvent } from "@/lib/events";
 import type { LLMProvider } from "@/lib/llm/provider";
@@ -64,6 +65,7 @@ export function newSession(opts: { ageRange: AgeRange; guardianConsent: boolean;
     mentorResult: null,
     nextStep: null,
     feedback: null,
+    ...v2Defaults(),
   };
 }
 

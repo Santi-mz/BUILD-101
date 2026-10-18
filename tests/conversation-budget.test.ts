@@ -11,7 +11,8 @@ import { countQuestions, failing, field, PERSONAS, prng, provider, reply, simula
  * Las tareas 5 y 6 (planificador v2 y turno) las tienen que pasar a `test` normal; la T7, la tarea 9.
  */
 const MAX = 8;
-const questions = (s: SessionState) => field<number>(s, "questionsAsked") ?? countQuestions(s);
+// El contador del estado no puede esconder preguntas: se toma el mayor entre el contador y la transcripción.
+const questions = (s: SessionState) => Math.max(field<number>(s, "questionsAsked") ?? 0, countQuestions(s));
 const assistant = (s: SessionState) => s.messages.filter((m) => m.role === "ASSISTANT");
 const SUMMARY = new Set(["SUMMARIZE_LEVEL", "MINI_SUMMARY"]);
 

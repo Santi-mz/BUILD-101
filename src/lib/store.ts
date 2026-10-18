@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { withDefaults } from "@/lib/engine/defaults";
 import type { SessionState } from "@/lib/engine/types";
 
 /**
@@ -25,7 +26,7 @@ function supabaseStore(): SessionStore {
     async get(id) {
       const { data } = await db.from(TABLE).select("state,expires_at").eq("id", id).maybeSingle();
       if (!data || new Date(data.expires_at) < new Date()) return null;
-      return data.state as SessionState;
+      return withDefaults(data.state as SessionState);
     },
     async save(s) {
       const { error } = await db.from(TABLE).upsert({
@@ -65,7 +66,7 @@ function memoryStore(): SessionStore {
     async get(id) {
       const s = m.sessions.get(id);
       if (!s || new Date(s.expiresAt) < new Date()) return null;
-      return structuredClone(s);
+      return withDefaults(structuredClone(s));
     },
     async save(s) {
       m.sessions.set(s.id, structuredClone(s));
