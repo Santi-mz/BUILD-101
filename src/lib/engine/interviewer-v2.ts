@@ -68,7 +68,7 @@ const INTENT_OPENERS: Record<NonNullable<Action["intent"]>, string> = {
   ASK_RECOMMENDATION: "Al final te muestro caminos concretos para investigar; para eso necesito conocerte un poco más.",
   SAD: "Lamento que estés así. Si es más que lo de estudiar, hablarlo con alguien de confianza ayuda (Línea Vida: 0800 0767, 24 h). Vamos de a poco.",
   ABOUT_BOT: "Sí, soy una IA: te hago pocas preguntas para ayudarte a pensar qué te gusta, pero no decido por vos.",
-  PROGRESS: "Son 8 preguntas como mucho, y podés ver tu perfil cuando quieras.",
+  PROGRESS: `Son ${rubric.limits.maxQuestions ?? 8} preguntas como mucho, y podés ver tu perfil cuando quieras.`,
 };
 const AREA_PLAIN: Record<Area, string> = {
   R: "hacer cosas con las manos o el cuerpo",
