@@ -1,5 +1,6 @@
 import { levelOf, rubric } from "@/lib/rubric";
 import { active, confirmedValues, evidenceOfLevel, exitCriteriaMet, isFlatProfile, levelState, mentionedValues, specifics } from "./profile";
+import type { Intent } from "./intents";
 import type { Action, SessionState } from "./types";
 
 /**
@@ -96,26 +97,71 @@ export function next(s: SessionState): Action {
   }
   // En el estado de decisión (N0) y en lo que le importa (N4) una respuesta corta puede ser completa
   // ("todo abierto"): pedir "una vez puntual" ahí no tiene sentido. Si dejó evidencia se sigue; si no, otro ángulo.
-  if ((last === "BRIEF" || last === "EVASIVE") && s.lastIndicator && !deepenable(s.lastIndicator)) {
-    const lastUser = [...s.messages].reverse().find((m) => m.role === "USER")?.id;
-    const gotSomething = active(s).some((e) => e.messageId === lastUser);
-    if (last === "EVASIVE" || !gotSomething) return { type: "CHANGE_ANGLE", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator), notes: "no insistir" };
+  // Un solo pedido de ejemplo por tema: si ya se profundizó, se sigue con lo que haya (no "bajémoslo a algo puntual" otra vez).
+  const deepenedJustNow = s.lastAction?.type === "ASK_DEEPEN";
+  // Pedir "una vez puntual en la que pasó eso" solo si la respuesta corta nombró una actividad o interés (N1–N3):
+  // a "está todo abierto" o "asado" no hay "eso" sobre qué pedir un ejemplo.
+  const nothingToDeepen = !madeInterestNow(s);
+  if ((last === "BRIEF" || last === "EVASIVE") && s.lastIndicator && (!deepenable(s.lastIndicator) || deepenedJustNow || nothingToDeepen)) {
+    if (last === "EVASIVE" || !gotSomethingNow(s)) return { type: "CHANGE_ANGLE", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator), notes: "no insistir" };
     return afterAnswer(s, lvl);
   }
   if ((last === "BRIEF" || last === "EVASIVE") && s.lastIndicator && s.sameIndicatorTries < P.maxDeepenTries) {
-    return { type: "ASK_DEEPEN", level: lvl, indicatorId: s.lastIndicator, notes: "pedir un ejemplo concreto" };
+    // El ejemplo se pide sobre lo que la persona acaba de nombrar, no sobre el tema de la pregunta anterior.
+    return { type: "ASK_DEEPEN", level: lvl, indicatorId: interestNow(s) ?? s.lastIndicator, notes: "pedir un ejemplo concreto" };
   }
   if ((last === "BRIEF" || last === "EVASIVE") && s.lastIndicator) {
     return { type: "CHANGE_ANGLE", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator), notes: "no insistir" };
   }
 
-  const single = singleUnconcrete(s, lvl);
+  // Después de una respuesta rica no se vuelve atrás a pedir ejemplos de algo anterior: se sigue.
+  const single = last !== "RICH" ? singleUnconcrete(s, lvl) : null;
   if (single) return { type: "ASK_DEEPEN", level: lvl, indicatorId: single, notes: "pedir un ejemplo concreto" };
   return afterAnswer(s, lvl);
 }
 
 /** Pedir un episodio concreto solo tiene sentido para intereses y actividades (niveles 1 a 3). */
 const deepenable = (id: string) => /^N[123]\./.test(id);
+
+const lastUserId = (s: SessionState) => [...s.messages].reverse().find((m) => m.role === "USER")?.id;
+
+/** El último mensaje de la persona dejó alguna evidencia. */
+function gotSomethingNow(s: SessionState) {
+  const id = lastUserId(s);
+  return active(s).some((e) => e.messageId === id);
+}
+
+/** El indicador de la actividad o interés que nombró el último mensaje (algo sobre lo que tiene sentido pedir un ejemplo). */
+function interestNow(s: SessionState): string | undefined {
+  const id = lastUserId(s);
+  const own = active(s).filter((e) => e.messageId === id && deepenable(e.indicatorId) && e.polarity === 1);
+  return (own.find((e) => e.indicatorId.startsWith(`N${s.currentLevel}.`)) ?? own[0])?.indicatorId;
+}
+const madeInterestNow = (s: SessionState) => interestNow(s) !== undefined;
+
+/**
+ * Ajusta la acción del planificador a una intención explícita de la persona (intents.ts).
+ * Cerrar con poca información no da una devolución útil: se avisa y se sigue, pero nunca se pide un ejemplo encima.
+ */
+export function withIntent(s: SessionState, a: Action, intent: Intent, minTurnsToClose: number): Action {
+  const lvl = s.currentLevel;
+  const question = (x: Action): Action =>
+    x.type === "ASK_DEEPEN" ? { type: "ASK_NEW", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator) } : x;
+  if (a.type === "SAFETY" || a.type === "CLOSE") return a;
+  switch (intent) {
+    case "CLOSE":
+      if (s.userTurns >= minTurnsToClose) return { type: "CLOSE", level: lvl };
+      return { ...question(a), intent };
+    case "ALREADY_SAID":
+      if (a.type === "SUMMARIZE_LEVEL" || a.type === "ADVANCE_LEVEL") return { ...a, intent };
+      return { type: "CHANGE_ANGLE", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator), notes: "no insistir", intent };
+    case "CONFUSED":
+      if (s.pendingConfirmation) return { type: "WAIT_CONFIRMATION", level: s.pendingConfirmation.level, intent };
+      return { type: "ASK_NEW", level: lvl, indicatorId: s.lastIndicator ?? nextIndicator(s, lvl), intent };
+    case "ASK_RECOMMENDATION":
+      return { ...question(a), intent };
+  }
+}
 
 /** Siguiente pregunta cuando la respuesta alcanzó: cada tanto lo que le importa (N4), si no el indicador menos cubierto. */
 function afterAnswer(s: SessionState, lvl: number): Action {

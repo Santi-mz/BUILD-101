@@ -106,8 +106,13 @@ describe("planificador (sección 8)", () => {
     expect(next(s)).toMatchObject({ type: "ADVANCE_LEVEL", level: 1 });
   });
   test("respuesta breve: profundiza; dos evasivas seguidas: cambia de ángulo", () => {
-    const s = session({ userTurns: 2, currentLevel: 1, lastIndicator: "N1.PERSONAS", qualityHistory: ["BRIEF"] });
+    // Breve pero con un interés ("me gusta la música"): pide un ejemplo concreto.
+    const said = { id: "u1", role: "USER" as const, content: "me gusta la música", createdAt: "" };
+    const s = session({ userTurns: 2, currentLevel: 1, lastIndicator: "N1.PERSONAS", qualityHistory: ["BRIEF"], messages: [said], evidence: [ev({ messageId: "u1", concrete: false })] });
     expect(next(s).type).toBe("ASK_DEEPEN");
+    // Breve y sin ningún interés ("está todo abierto" en el nivel 1, captura de producción): no hay "eso" que profundizar.
+    const open = session({ userTurns: 2, currentLevel: 1, lastIndicator: "N1.PERSONAS", qualityHistory: ["BRIEF"], messages: [{ ...said, content: "Está todo abierto." }] });
+    expect(next(open).type).not.toBe("ASK_DEEPEN");
     const t = session({ userTurns: 3, currentLevel: 1, lastIndicator: "N1.PERSONAS", qualityHistory: ["EVASIVE", "EVASIVE"] });
     expect(next(t).type).toBe("CHANGE_ANGLE");
     expect(next(t).indicatorId).not.toBe("N1.PERSONAS");
