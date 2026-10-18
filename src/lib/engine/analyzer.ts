@@ -201,7 +201,9 @@ function negationSpans(c: string): [number, number][] {
 }
 
 function clauses(text: string) {
-  return text.split(/(?<=[.;!?])\s+|,\s*(?:pero|aunque)\s+|\s+pero\s+/i).map((c) => c.trim()).filter(Boolean);
+  // También por comas: en una respuesta larga ("me encanta dibujar, ayudo en la panadería, el año pasado organicé…")
+  // cada interés queda con su cita y su propio "concreto", en vez de que el primer área se lleve todo.
+  return text.split(/(?<=[.;!?])\s+|,\s*(?:pero|aunque)\s+|\s+pero\s+|,\s+/i).map((c) => c.trim()).filter(Boolean);
 }
 
 export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
@@ -225,6 +227,12 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
     if (result) out.confirmation = { target: "LEVEL_SUMMARY", result, corrections: result === "CONFIRMED" ? undefined : userText.slice(0, 300) };
   }
 
+  // Un ejemplo concreto sin área propia ("…, el año pasado hice uno de naves con un amigo") es el ejemplo de los
+  // intereses que se nombran en el mismo mensaje ("me encanta programar jueguitos, …").
+  const orphanExample = clauses(userText).some((cl) => {
+    const c = norm(cl);
+    return CONCRETE.test(c) && !(Object.keys(AREA_RULES) as Area[]).some((a) => AREA_RULES[a].test(c));
+  });
   for (const clause of clauses(userText)) {
     const c = norm(clause);
     const neg = NEG_CLAUSE.test(c);
@@ -238,7 +246,8 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
     };
     const positives = areas.filter((a) => !negated(a));
     // Concreto salvo que todo lo nombrado esté negado ("con mis amigos, todos los viernes" no nombra un área y es concreto).
-    const concrete = CONCRETE.test(c) && (positives.length > 0 || areas.length === 0);
+    // Sin área nombrada ("con mis amigos, todos los viernes"), lo concreto puede estar en otra parte del mensaje.
+    const concrete = areas.length === 0 ? CONCRETE.test(t) : (CONCRETE.test(c) || orphanExample) && positives.length > 0;
     for (const area of areas) {
       const pol = negated(area) ? -1 : 1;
       push({ indicatorId: `N2.${area}`, area, polarity: pol, kind: "DECLARED", concrete: pol === 1 && concrete, quote });
@@ -283,7 +292,7 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
       push({ indicatorId: "N0.CONF_INT", polarity: 1, kind: "DECLARED", concrete: false, quote });
     if (/\b(no me gusta nada|me da igual|no tengo ganas|me da lo mismo)\b/.test(c))
       push({ indicatorId: "N0.MOTIV", polarity: 1, kind: "DECLARED", concrete: false, quote });
-    if (/\b(arruino mi vida|si me equivoco|carrera perfecta|para toda la vida|no hay vuelta atras|me arruino)\b/.test(c))
+    if (/\b(arruino mi vida|arruinarme la vida|arruinar mi vida|si me equivoco|equivocarme|elegir mal|carrera perfecta|para toda la vida|no hay vuelta atras|me arruino)\b/.test(c))
       push({ indicatorId: "N0.CREENCIAS", polarity: 1, kind: "DECLARED", concrete: false, quote });
     if (/\b(me gusta todo|me interesan muchas cosas|muchas cosas me gustan)\b/.test(c))
       push({ indicatorId: "N1.ENTUSIASMO", value: "alto", polarity: 1, kind: "DECLARED", concrete: false, quote });

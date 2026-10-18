@@ -174,6 +174,9 @@ export function withIntent(s: SessionState, a: Action, intent: Intent, minTurnsT
       if (s.pendingConfirmation) return { type: "WAIT_CONFIRMATION", level: s.pendingConfirmation.level, intent };
       return { type: "ASK_NEW", level: lvl, indicatorId: s.lastIndicator ?? nextIndicator(s, lvl), intent };
     case "ASK_RECOMMENDATION":
+    case "SAD":
+    case "ABOUT_BOT":
+    case "PROGRESS":
       return { ...question(a), intent };
   }
 }
