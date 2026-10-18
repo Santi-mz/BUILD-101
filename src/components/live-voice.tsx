@@ -2,21 +2,10 @@
 
 import { GoogleGenAI, Modality, type FunctionDeclaration, type LiveServerMessage, type Session } from "@google/genai";
 import { useEffect, useRef, useState } from "react";
+import { call, type View } from "@/components/api-client";
 
 type Status = "conectando" | "escuchando" | "pensando" | "hablando" | "terminado" | "error";
 type Turn = { role: "user" | "agent"; text: string };
-
-const TOOL_LABELS: Record<string, string> = {
-  search_pubmed: "Buscando evidencia en PubMed",
-  update_profile: "Actualizando tu perfil",
-  get_profile: "Leyendo tu perfil",
-  finalize_profile: "Armando tus recomendaciones",
-  search_news: "Buscando noticias",
-  web_search: "Buscando opciones reales en la web",
-  graph_match_profile: "Recorriendo el grafo de carreras",
-  graph_explore: "Navegando ocupaciones relacionadas",
-  graph_search: "Buscando en el grafo de carreras",
-};
 
 // --- audio: micrófono a PCM 16 kHz y reproducción de PCM 24 kHz ---
 function toBase64(bytes: Uint8Array) {
@@ -40,16 +29,22 @@ function pcm16ToFloat(b64: string) {
 }
 
 /**
- * Conversación por voz en tiempo real con Gemini Live: hablás de corrido, el agente te contesta con voz,
- * te puede interrumpir o ser interrumpido, y usa las mismas herramientas que el chat (perfil, PubMed, grafo).
+ * Conversación por voz en tiempo real con Gemini Live: hablás de corrido y Rumbo te contesta con voz.
+ * Gemini Live solo escucha y habla: cada cosa que decís pasa por el mismo motor que el chat escrito (/api/chat),
+ * que analiza, decide la próxima pregunta y guarda todo en la sesión.
  */
-export default function LiveVoice({ onClose }: { onClose: () => void }) {
+export default function LiveVoice({ greeting, onView, onClose }: { greeting: string; onView: (v: View) => void; onClose: () => void }) {
   const [status, setStatus] = useState<Status>("conectando");
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [activity, setActivity] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ code: string; completeness: number; status: string } | null>(null);
+  const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
   const cleanup = useRef<() => void>(() => {});
+  // La pregunta con la que arranca se toma una sola vez: los turnos siguientes no reconectan la voz.
+  const firstLine = useRef(greeting);
+  const onViewRef = useRef(onView);
+  useEffect(() => {
+    onViewRef.current = onView;
+  }, [onView]);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,18 +55,6 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
     let nextTime = 0;
     const playing = new Set<AudioBufferSourceNode>();
 
-    // Lo dicho en el turno actual: se guarda en la charla cuando el turno termina.
-    const pending = { user: "", agent: "" };
-    const flush = () => {
-      const turns = [
-        { role: "user", text: pending.user },
-        { role: "agent", text: pending.agent },
-      ].filter((t) => t.text.trim());
-      pending.user = "";
-      pending.agent = "";
-      if (turns.length)
-        fetch("/api/live/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turns }), keepalive: true }).catch(() => {});
-    };
     const add = (role: Turn["role"], text: string) =>
       setTurns((t) => {
         const last = t[t.length - 1];
@@ -102,52 +85,45 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
       nextTime = 0;
     };
 
-    const refreshProfile = () =>
-      fetch("/api/chat")
-        .then((r) => r.json())
-        .then((d) => !cancelled && setProfile(d.profile))
-        .catch(() => {});
+    // Lo que dijo la persona va al motor de la entrevista; Live solo lee la respuesta.
+    const turn = async (args: Record<string, unknown>) => {
+      const texto = String(args.texto ?? "").trim();
+      if (!texto) return { error: "No llegó lo que dijo la persona." };
+      const r = await call("/api/chat", { body: { message: texto, close: args.terminar === true } });
+      if (!r.view) return { error: r.error ?? "Falló el motor." };
+      if (!cancelled) {
+        setView(r.view);
+        onViewRef.current(r.view);
+      }
+      return { decir: r.view.reply ?? "" };
+    };
 
     const onMessage = async (m: LiveServerMessage) => {
       const sc = m.serverContent;
       if (sc?.interrupted) stopPlayback();
       for (const p of sc?.modelTurn?.parts ?? []) if (p.inlineData?.data) play(p.inlineData.data);
-      if (sc?.inputTranscription?.text) {
-        add("user", sc.inputTranscription.text);
-        pending.user += sc.inputTranscription.text;
-      }
-      if (sc?.outputTranscription?.text) {
-        add("agent", sc.outputTranscription.text);
-        pending.agent += sc.outputTranscription.text;
-      }
-      if (sc?.turnComplete || sc?.interrupted) flush();
+      if (sc?.inputTranscription?.text) add("user", sc.inputTranscription.text);
+      if (sc?.outputTranscription?.text) add("agent", sc.outputTranscription.text);
       if (m.toolCall?.functionCalls?.length) {
         setStatus("pensando");
         const responses = await Promise.all(
-          m.toolCall.functionCalls.map(async (fc) => {
-            setActivity(TOOL_LABELS[fc.name ?? ""] ?? fc.name ?? "");
-            const r = await fetch("/api/live/tool", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name: fc.name, args: fc.args ?? {} }),
-            })
-              .then((x) => x.json())
-              .catch(() => ({ error: "Falló la herramienta" }));
-            return { id: fc.id, name: fc.name, response: r as Record<string, unknown> };
-          }),
+          m.toolCall.functionCalls.map(async (fc) => ({
+            id: fc.id,
+            name: fc.name,
+            response: (fc.name === "responder"
+              ? await turn(fc.args ?? {}).catch(() => ({ error: "Falló el motor." }))
+              : { error: "Herramienta desconocida." }) as Record<string, unknown>,
+          })),
         );
-        setActivity(null);
-        session?.sendToolResponse({ functionResponses: responses });
-        if (m.toolCall.functionCalls.some((f) => f.name === "update_profile" || f.name === "finalize_profile")) refreshProfile();
+        if (!cancelled) session?.sendToolResponse({ functionResponses: responses });
       }
     };
 
     (async () => {
       try {
-        const cfg = await fetch("/api/live/token", { method: "POST" }).then((r) => {
-          if (!r.ok) throw new Error("token");
-          return r.json() as Promise<{ token: string; model: string; systemInstruction: string; tools: FunctionDeclaration[] }>;
-        });
+        const res = await fetch("/api/live/token", { method: "POST" });
+        const cfg = (await res.json()) as { token: string; model: string; systemInstruction: string; tools: FunctionDeclaration[]; error?: { message: string } };
+        if (!res.ok) throw new Error(cfg.error?.message ?? "");
         stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
         if (cancelled) return;
         const ai = new GoogleGenAI({ apiKey: cfg.token, httpOptions: { apiVersion: "v1alpha" } });
@@ -164,7 +140,7 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
             onopen: () => setStatus("escuchando"),
             onmessage: (m) => void onMessage(m),
             onerror: () => {
-              setError("Se cortó la conexión con el agente de voz.");
+              setError("Se cortó la conexión con la voz en vivo.");
               setStatus("error");
             },
             onclose: () => setStatus((s) => (s === "error" ? s : "terminado")),
@@ -176,17 +152,15 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
         proc.onaudioprocess = (e) => session?.sendRealtimeInput({ audio: { data: toBase64(floatToPcm16(e.inputBuffer.getChannelData(0))), mimeType: "audio/pcm;rate=16000" } });
         src.connect(proc);
         proc.connect(inCtx.destination);
-        // Que el agente arranque hablando.
-        session.sendClientContent({ turns: [{ role: "user", parts: [{ text: "(La persona abrió la conversación por voz. Saludala corto y seguí la entrevista.)" }] }], turnComplete: true });
-        refreshProfile();
-      } catch {
-        setError("No pude arrancar la voz en vivo. Revisá el permiso del micrófono o probá de nuevo.");
+        // Arranca leyendo la última pregunta del motor, para seguir la charla desde donde quedó.
+        session.sendClientContent({ turns: [{ role: "user", parts: [{ text: `Leé en voz alta, tal cual: «${firstLine.current}»` }] }], turnComplete: true });
+      } catch (err) {
+        setError((err instanceof Error && err.message) || "No pude arrancar la voz en vivo. Revisá el permiso del micrófono o probá de nuevo.");
         setStatus("error");
       }
     })();
 
     cleanup.current = () => {
-      flush();
       cancelled = true;
       session?.close();
       stream?.getTracks().forEach((t) => t.stop());
@@ -205,21 +179,19 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
   const label = {
     conectando: "Conectando…",
     escuchando: "Te escucho",
-    pensando: activity ?? "Pensando…",
+    pensando: "Pensando en lo que dijiste…",
     hablando: "Rumbo está hablando",
     terminado: "Conversación terminada",
     error: "No se pudo conectar",
   }[status];
-  const pct = profile ? (profile.status === "final" ? 100 : Math.round(profile.completeness * 100)) : 0;
+  const done = view?.status === "COMPLETED";
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur" role="dialog" aria-label="Conversación por voz">
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium">Conversación por voz · en vivo</span>
-          <span className="font-mono text-accent">
-            {profile?.code || "···"} · {pct}%
-          </span>
+          {view && <span className="text-accent">{view.stage}</span>}
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center gap-6">
@@ -249,11 +221,11 @@ export default function LiveVoice({ onClose }: { onClose: () => void }) {
 
         <div className="mt-6 flex justify-center gap-3">
           <button onClick={close} className="rounded-full bg-foreground px-7 py-3 font-medium text-background">
-            Terminar
+            {done ? "Volver al chat" : "Terminar"}
           </button>
-          {profile?.status === "final" && (
-            <a href="/perfil" className="rounded-full bg-accent px-7 py-3 font-medium text-background">
-              Ver mi perfil
+          {done && (
+            <a href="/resultado" className="rounded-full bg-accent px-7 py-3 font-medium text-background">
+              Ver lo que entendí
             </a>
           )}
         </div>

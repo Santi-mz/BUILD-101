@@ -1,9 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { call, type View } from "@/components/api-client";
 import { speak, startDictation, stopSpeaking, toWav16k } from "@/lib/voice";
+
+// Gemini Live se carga solo si la persona abre la voz en vivo.
+const LiveVoice = dynamic(() => import("@/components/live-voice"), { ssr: false });
 
 const AGE_OPTIONS = [
   { value: "A14_15", label: "14 a 15" },
@@ -25,6 +29,7 @@ export default function Chat() {
   const textInput = useRef<HTMLInputElement>(null);
   const voiceRef = useRef(false);
   const [voiceReplies, setVoiceReplies] = useState(false);
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
     call("/api/session").then((r) => {
@@ -197,6 +202,18 @@ export default function Chat() {
               </button>
             </form>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              {view.mode.llm !== "mock" && (
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    stopSpeaking();
+                    setLive(true);
+                  }}
+                  className="rounded-full bg-accent-soft px-3 py-1 font-medium text-accent disabled:opacity-60"
+                >
+                  Hablar en vivo
+                </button>
+              )}
               <button
                 onClick={() => {
                   voiceRef.current = !voiceRef.current;
@@ -218,6 +235,14 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      {live && (
+        <LiveVoice
+          greeting={[...view.messages].reverse().find((m) => m.role === "ASSISTANT")?.content ?? ""}
+          onView={setView}
+          onClose={() => setLive(false)}
+        />
+      )}
 
       <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border py-6 pl-6 lg:block">
         <Panel view={view} onCorrect={correct} />
