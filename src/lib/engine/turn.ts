@@ -345,11 +345,16 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
     const added = s.evidence.length > before;
     quality = intent ? "OFF_TOPIC" : output.answerQuality;
     // Un fallo del LLM cuenta como "sin información" solo si el analizador por reglas tampoco sacó nada.
-    if (fallback && !added) {
+    // Un "no sé" o una intención ("ya te lo dije", "¿qué me recomendás?") no necesitan al LLM para entenderse:
+    // son respuestas sin información (stall), no fallos del LLM. Solo cuenta como fallo un texto con contenido
+    // que ni el LLM ni las reglas pudieron leer. (En producción, con la cuota de Gemini agotada, cada "no sé"
+    // contaba como fallo y a la segunda se ofrecía cerrar diciendo "con lo que me contaste…".)
+    const plainNoInfo = Boolean(intent) || NO_INFO_TEXT.test(norm(text));
+    if (fallback && !added && !plainNoInfo) {
       s.llmFailures += 1;
       logEvent("agent.fallback", { session: s.id, agent: "analyzer" });
     } else if (!fallback) s.llmFailures = 0;
-    noInfo = Boolean(intent) || NO_INFO_TEXT.test(norm(text)) || isNoInfo(quality, added, fallback && !added);
+    noInfo = plainNoInfo || isNoInfo(quality, added, fallback && !added);
   }
 
   s.qualityHistory = [...s.qualityHistory, quality].slice(-6);

@@ -3,6 +3,7 @@ import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ACTION_GUIDE_V2, INTERVIEWER_V2_SYSTEM, SLOT_GUIDE } from "@/prompts/interviewer.v2";
 import { check } from "./guards";
 import { INTENT_GUIDE } from "./intents";
+import { essentialsMet } from "./planner-v2";
 import { active, panelLabel, topAreas } from "./profile";
 import type { Action, OptionRef, SessionState } from "./types";
 
@@ -111,7 +112,10 @@ export function templateV2(s: SessionState, a: Action): string {
     case "MINI_SUMMARY":
       return miniSummaryText(s);
     case "OFFER_CLOSE":
-      return "Con lo que me contaste ya puedo armarte un perfil. ¿Lo vemos ahora o preferís una pregunta más?";
+      // Honesto: solo dice "ya puedo armarte un perfil" si tiene los imprescindibles (si no, ofrece lo que hay).
+      return essentialsMet(s)
+        ? "Con lo que me contaste ya puedo armarte un perfil. ¿Lo vemos ahora o preferís una pregunta más?"
+        : "Todavía sé poco de vos, pero puedo mostrarte lo que tengo hasta ahora. ¿Lo vemos o preferís una pregunta más?";
     case "ASK_SLOT":
     default: {
       const ack = added ? pick(["Buenísimo.", "Te sigo.", "Gracias por contarlo.", "Ok, anotado."], s.userTurns) : "";
