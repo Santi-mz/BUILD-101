@@ -87,7 +87,7 @@ describe("perfil a pedido y resiliencia (spec demo)", () => {
     for (const t of [1, 3, 6]) expect((await closeAt(t)).status, `turno ${t}`).toBe("COMPLETED");
   });
 
-  test.fails("T5b: pedir el perfil en el turno 1 o 3 deja un perfil provisional", async () => {
+  test("T5b: pedir el perfil en el turno 1 o 3 deja un perfil provisional", async () => {
     for (const t of [1, 3]) expect(field<boolean>(await closeAt(t), "provisional"), `turno ${t}`).toBe(true);
   });
 
@@ -97,7 +97,7 @@ describe("perfil a pedido y resiliencia (spec demo)", () => {
     expect(questions(s)).toBeLessThanOrEqual(MAX);
   });
 
-  test.fails("T6b: pedir el perfil (close: true) no llama al LLM", async () => {
+  test("T6b: pedir el perfil (close: true) no llama al LLM", async () => {
     const p = failing();
     const s = await start("A18_21", p);
     p.calls = 0;

@@ -1,17 +1,17 @@
 import { v2Defaults } from "./defaults";
-import { RUBRIC_VERSION } from "@/lib/rubric";
+import { optionById, RUBRIC_VERSION, type Area, type Axis } from "@/lib/rubric";
 import { logEvent } from "@/lib/events";
-import type { LLMProvider } from "@/lib/llm/provider";
+import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ANALYZER_PROMPT_VERSION } from "@/prompts/analyzer.v1";
 import { INTERVIEWER_PROMPT_VERSION } from "@/prompts/interviewer.v1";
 import { analyze } from "./analyzer";
 import { write } from "./interviewer";
 import { maskPII } from "./pii";
 import { detectIntent, MIN_TURNS_TO_CLOSE } from "./intents";
-import { next, withIntent } from "./planner";
-import { applyAnalysis, countTurnInLevel, markSummarized, newId, reopenLevel, resolveLevelConfirmation } from "./profile";
+import { essentialsMet, isNoInfo, isV2, MAX_QUESTIONS, next, withIntent } from "./planner";
+import { active, applyAnalysis, countTurnInLevel, markSummarized, newId, reopenLevel, resolveLevelConfirmation, topAreas } from "./profile";
 import { precheck, SAFETY_FOLLOWUP, SAFETY_MESSAGE, wantsToResume } from "./safety";
-import type { Action, AgeRange, SessionState } from "./types";
+import type { Action, AgeRange, AnalyzerOutput, AnswerQuality, CloseReason, SessionState } from "./types";
 
 /**
  * Orquestador del turno (A0, Parte 1). Orden fijo (Documento 2, sección 4):
@@ -69,9 +69,50 @@ export function newSession(opts: { ageRange: AgeRange; guardianConsent: boolean;
   };
 }
 
-function say(s: SessionState, content: string, action: Action) {
+/**
+ * ¿El mensaje del asistente es una pregunta de la IA? Todo mensaje de la entrevista lo es (saludo, preguntas,
+ * mini-resumen y oferta de cierre), aunque el texto no termine en "?"; el cierre y el de seguridad no.
+ */
+const isQuestion = (action: Action) => action.type !== "CLOSE" && action.type !== "SAFETY";
+
+/**
+ * Guarda el mensaje del asistente. En v2 cuenta las preguntas y es el freno de último recurso del tope:
+ * si este mensaje fuera la pregunta 9, se reemplaza por el cierre (defensa en profundidad, design.md §5).
+ */
+function say(s: SessionState, content: string, action: Action): { content: string; action: Action } {
+  if (isV2(s) && isQuestion(action)) {
+    if (s.questionsAsked >= MAX_QUESTIONS) return closeWith(s, "budget");
+    s.questionsAsked += 1;
+  }
   s.messages.push({ id: newId("msg"), role: "ASSISTANT", content, action, createdAt: new Date().toISOString() });
   s.lastAction = action;
+  return { content, action };
+}
+
+/** Cierra la entrevista v2 sin LLM: motivo, perfil provisional si faltan imprescindibles y mensaje fijo. */
+function closeWith(s: SessionState, reason: CloseReason): { content: string; action: Action } {
+  closeSession(s, reason);
+  const action: Action = { type: "CLOSE", level: s.currentLevel, reason };
+  const content = s.provisional ? CLOSE_TEXT_PROVISIONAL : CLOSE_TEXT;
+  s.messages.push({ id: newId("msg"), role: "ASSISTANT", content, action, createdAt: new Date().toISOString() });
+  s.lastAction = action;
+  return { content, action };
+}
+
+/** Efectos de una acción v2 sobre el estado (antes de redactar). */
+function commitV2(s: SessionState, a: Action) {
+  if (a.indicatorId) {
+    s.askedCount[a.indicatorId] = (s.askedCount[a.indicatorId] ?? 0) + 1;
+    s.lastIndicator = a.indicatorId;
+  }
+  if (a.slot) {
+    s.askedCount[a.slot] = (s.askedCount[a.slot] ?? 0) + 1;
+    if (!s.slotsAsked.includes(a.slot)) s.slotsAsked.push(a.slot);
+  }
+  if (a.type === "ASK_DEEPEN" && a.indicatorId && !s.deepened.includes(a.indicatorId)) s.deepened.push(a.indicatorId);
+  if (a.type === "MINI_SUMMARY") s.miniSummaryDone = true;
+  if (a.type === "OFFER_CLOSE") s.closeOffered = true;
+  else if (s.offerAccepted && a.type !== "CLOSE") s.extraAsked = true;
 }
 
 /** Aplica efectos de la acción elegida sobre el estado (antes de redactar). */
@@ -95,26 +136,60 @@ function commit(s: SessionState, a: Action) {
   }
 }
 
-export function closeSession(s: SessionState) {
+/** Cierra la sesión. En v2 guarda el motivo y marca el perfil provisional si faltan los casilleros imprescindibles. */
+export function closeSession(s: SessionState, reason?: CloseReason) {
   s.status = "COMPLETED";
   s.phase = "PROFILE_REVIEW";
-  logEvent("profile.closed", { session: s.id, turns: s.userTurns, evidence: s.evidence.length });
+  if (reason) {
+    s.closeReason = reason;
+    s.provisional = !essentialsMet(s);
+  }
+  logEvent("profile.closed", { session: s.id, turns: s.userTurns, evidence: s.evidence.length, reason: reason ?? null, provisional: s.provisional });
 }
 
 const CLOSE_TEXT =
   "Listo, con todo lo que me contaste armé tu devolución: lo que más aparece, tus intereses concretos y lo que te importa. Revisala tranquilo, corregí lo que no te represente y, si querés, después exploramos caminos para investigar.";
+const CLOSE_TEXT_PROVISIONAL =
+  "Listo. Charlamos poco, así que esto es un perfil provisional: te muestro lo que alcancé a ver y lo que todavía no sé de vos. Si querés, después seguimos y lo completamos.";
+
+/** Tiempo máximo del turno para las llamadas al LLM (la spec pide resolver el turno en menos de 45 s). */
+const TURN_BUDGET_MS = 40_000;
+
+/** El proveedor, pero sin pasarse del presupuesto del turno: si no queda tiempo, falla rápido (y se usa el plan B). */
+function withDeadline(p: LLMProvider, deadline: number): LLMProvider {
+  const guard = <T,>(run: () => Promise<T>): Promise<T> => {
+    const left = deadline - Date.now();
+    if (left < 1500) return Promise.reject(new LLMUnavailable("sin tiempo en el turno"));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const limit = new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new LLMUnavailable("tiempo del turno agotado")), left);
+    });
+    return Promise.race([run(), limit]).finally(() => clearTimeout(timer));
+  };
+  return {
+    name: p.name,
+    get model() {
+      return p.model;
+    },
+    json: (o) => guard(() => p.json(o)),
+    text: (o) => guard(() => p.text(o)),
+  };
+}
 
 /** Primer mensaje del agente (sin mensaje de la persona). */
 export async function greet(provider: LLMProvider, s: SessionState) {
   const a = next(s);
-  commit(s, a);
+  if (isV2(s)) commitV2(s, a);
+  else commit(s, a);
   const { text } = await write(provider, s, a);
   say(s, text, a);
   return { reply: text, action: a };
 }
 
+export type TurnOptions = { forceClose?: boolean; optionId?: string };
+
 /** Procesa un turno completo. Muta `s`. */
-export async function runTurn(provider: LLMProvider, s: SessionState, rawText: string, opts: { forceClose?: boolean } = {}) {
+export async function runTurn(provider: LLMProvider, s: SessionState, rawText: string, opts: TurnOptions = {}) {
   // 1. Guardar mensaje de la persona con datos personales enmascarados (R15).
   const text = maskPII(rawText.trim().slice(0, 2000));
   const msgId = newId("msg");
@@ -137,9 +212,11 @@ export async function runTurn(provider: LLMProvider, s: SessionState, rawText: s
   s.userTurns += 1;
   countTurnInLevel(s, s.currentLevel);
 
-  // 2. Prechequeo de seguridad por reglas.
+  // 2. Prechequeo de seguridad por reglas (igual en v1 y v2: la seguridad va siempre primero).
   const pre = precheck(text);
   if (pre.flag) return safetyStop(s, msgId, pre.category ?? "MALESTAR_INTENSO");
+
+  if (isV2(s)) return runTurnV2(provider, s, text, msgId, opts);
 
   // 3–4. Analizador + bandera de riesgo del analizador.
   const { output, fallback } = await analyze(provider, s, text);
@@ -183,6 +260,114 @@ export async function runTurn(provider: LLMProvider, s: SessionState, rawText: s
   // 9. Guardar mensaje del agente con su acción.
   say(s, reply, a);
   return { reply, action: a, safety: false };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Turno v2 (spec demo, design.md §5): cierre a pedido sin LLM, opciones sin LLM, contadores y presupuesto.
+// ---------------------------------------------------------------------------------------------
+const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+const NO_INFO_TEXT = /^(no se|nose|ni idea|depende|capaz|puede ser|que se yo|paso|nada|ninguna|ninguno|no me interesa|no tengo idea|no)[.!?\s]*$/;
+const SUMMARY_REJECT = /^(no|nop|nope)\b|\bno es asi\b|\bno me representa\b|^para nada|^nada que ver/;
+const SUMMARY_PARTIAL = /\b(mas o menos|masomenos|en parte|algo asi|mas bien no)\b/;
+const SUMMARY_CONFIRM = /^(si|sii+|exacto|tal cual|me representa|dale|obvio|claro|totalmente|correcto)\b/;
+/** Botón "Una pregunta más" de la oferta de cierre (no está en el banco: lo agrega la oferta). */
+export const ONE_MORE = { id: "one_more", label: "Una pregunta más" };
+
+/** Respuesta al mini-resumen: confirma o descarta lo que se resumió (las evidencias de las áreas destacadas). */
+function resolveMiniSummary(s: SessionState, text: string): "CONFIRMED" | "REJECTED" | "PARTIAL" | null {
+  const t = norm(text);
+  const result = SUMMARY_PARTIAL.test(t) ? "PARTIAL" : SUMMARY_REJECT.test(t) ? "REJECTED" : SUMMARY_CONFIRM.test(t) ? "CONFIRMED" : null;
+  if (!result || result === "PARTIAL") return result;
+  const top = new Set(topAreas(active(s)));
+  for (const e of s.evidence) {
+    if (e.status !== "PENDING" || e.polarity !== 1 || !e.area || !top.has(e.area)) continue;
+    Object.assign(e, { status: result, changedBy: "summary" });
+  }
+  logEvent("level.confirmed", { session: s.id, level: 2, result });
+  return result;
+}
+
+/** Evidencia de una opción del banco, con el texto de la opción como cita (sin llamar al analizador). */
+function optionOutput(label: string, evidence: { indicatorId: string; area?: Area; axis?: Axis; value?: string }[], noInfo: boolean): AnalyzerOutput {
+  return {
+    evidence: evidence.map((e) => ({ ...e, polarity: 1, kind: "DECLARED", concrete: false, quote: label, rationale: `Opción elegida: ${label}` })),
+    contradictions: [],
+    answerQuality: noInfo ? "EVASIVE" : "RICH",
+    risk: { flag: false },
+  };
+}
+
+async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, msgId: string, opts: TurnOptions) {
+  const intent = detectIntent(text);
+  if (intent) logEvent("intent.detected", { session: s.id, intent });
+
+  // 3. Pidió el perfil (botón o texto): se cierra SIN llamar al LLM.
+  if (opts.forceClose || intent === "CLOSE") {
+    s.closeRequested = true;
+    const out = closeWith(s, "user");
+    return { reply: out.content, action: out.action, safety: false };
+  }
+
+  const prev = s.lastAction;
+  const deadline = Date.now() + TURN_BUDGET_MS;
+  const llm = withDeadline(provider, deadline);
+  const before = s.evidence.length;
+  let noInfo = false;
+  let quality: AnswerQuality = "RICH";
+  const shortReply = text.split(/\s+/).length <= 6;
+
+  const option = opts.optionId ? s.lastOptions?.find((o) => o.id === opts.optionId) : undefined;
+  if (option?.id === ONE_MORE.id) {
+    // "Una pregunta más" en la oferta de cierre.
+    s.offerAccepted = true;
+  } else if (option) {
+    // 4. Opción del banco: evidencia registrada sin analizador.
+    const bank = optionById(option.id);
+    noInfo = Boolean(bank?.noInfo);
+    quality = noInfo ? "EVASIVE" : "RICH";
+    applyAnalysis(s, optionOutput(option.label, bank?.evidence ?? [], noInfo), msgId, option.label);
+    if (bank?.marksDone && bank.group !== "COMMON") s.askedCount[`done:${bank.group}`] = 1;
+    if (prev?.type === "MINI_SUMMARY") resolveMiniSummary(s, option.label);
+  } else if (prev?.type === "MINI_SUMMARY" && shortReply && resolveMiniSummary(s, text)) {
+    // "Sí" / "Más o menos" / "No" al mini-resumen: no hace falta el analizador.
+  } else if (prev?.type === "OFFER_CLOSE" && shortReply) {
+    // Cualquier respuesta corta que no pide el perfil es "una pregunta más".
+    s.offerAccepted = true;
+  } else {
+    // Texto libre: analizador (con el presupuesto del turno). Si falla, ya cae al analizador por reglas.
+    const { output, fallback } = await analyze(llm, s, text);
+    if (output.risk.flag) return safetyStop(s, msgId, output.risk.category ?? "MALESTAR_INTENSO");
+    applyAnalysis(s, output, msgId, text);
+    if (prev?.type === "MINI_SUMMARY") resolveMiniSummary(s, text);
+    const added = s.evidence.length > before;
+    quality = intent ? "OFF_TOPIC" : output.answerQuality;
+    // Un fallo del LLM cuenta como "sin información" solo si el analizador por reglas tampoco sacó nada.
+    if (fallback && !added) {
+      s.llmFailures += 1;
+      logEvent("agent.fallback", { session: s.id, agent: "analyzer" });
+    } else if (!fallback) s.llmFailures = 0;
+    noInfo = Boolean(intent) || NO_INFO_TEXT.test(norm(text)) || isNoInfo(quality, added, fallback && !added);
+  }
+
+  s.qualityHistory = [...s.qualityHistory, quality].slice(-6);
+  s.stall = noInfo ? s.stall + 1 : 0;
+  logEvent("profile.updated", { session: s.id, evidence: s.evidence.length, level: s.currentLevel });
+
+  // 6. Planificador v2 (puro).
+  const planned = next(s);
+  const a: Action = intent && planned.type !== "CLOSE" ? withIntent(s, planned, intent, MIN_TURNS_TO_CLOSE) : planned;
+  commitV2(s, a);
+  if (a.type === "CLOSE") {
+    const out = closeWith(s, a.reason ?? "sufficient");
+    return { reply: out.content, action: out.action, safety: false };
+  }
+
+  // 7–8. Entrevistador (con plantilla si el LLM falla o no hay tiempo) + guardas.
+  const { text: reply, source } = await write(llm, s, a);
+  if (source === "template" && provider.name !== "mock") logEvent("agent.fallback", { session: s.id, agent: "interviewer" });
+  // 9. Guardar (say aplica el freno del tope).
+  const out = say(s, reply, a);
+  return { reply: out.content, action: out.action, safety: false };
 }
 
 function recordSafety(s: SessionState, messageId: string, category: string) {

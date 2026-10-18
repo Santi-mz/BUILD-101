@@ -116,7 +116,7 @@ export function slotStatus(s: SessionState): Record<SlotId, boolean> {
     E1: ev.some((e) => e.indicatorId.startsWith("N0.")) || slotAsks(s, "E1") >= 1,
     E2: sameArea,
     E3: positive.some((e) => e.indicatorId === "N4.VALOR"),
-    C1: ev.some((e) => e.indicatorId === "N4.BARRERA") || answeredNoneTo(s, "C1"),
+    C1: ev.some((e) => e.indicatorId === "N4.BARRERA") || answeredNoneTo(s, "C1") || (s.askedCount?.["done:C1"] ?? 0) > 0,
     C2: ev.some((e) => e.indicatorId === "N3.RECHAZO" || (e.polarity === -1 && e.indicatorId.startsWith("N2."))),
     C3: positive.some((e) => e.concrete && /^N[123]\./.test(e.indicatorId)),
   };
