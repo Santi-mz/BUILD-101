@@ -133,7 +133,7 @@ export function templateV2(s: SessionState, a: Action): string {
         : "Todavía sé poco de vos, pero puedo mostrarte lo que tengo hasta ahora. ¿Lo vemos o preferís una pregunta más?";
     case "ASK_SLOT":
     default: {
-      const ack = added ? pick(["Buenísimo.", "Te sigo.", "Gracias por contarlo.", "Ok, anotado."], s.userTurns) : "";
+      const ack = added && !opener ? pick(["Buenísimo.", "Te sigo.", "Gracias por contarlo.", "Ok, anotado."], s.userTurns) : "";
       // La pregunta sale del casillero, para que coincida con los botones; la segunda vez, una alternativa.
       const asked = s.messages.filter((m) => m.role === "ASSISTANT" && m.action?.slot === slot).length;
       const question = asked > 0 ? SLOT_OPTIONS_ASK[slot ?? "E2"] : SLOT_ASK[slot ?? "E2"];
@@ -145,7 +145,10 @@ export function templateV2(s: SessionState, a: Action): string {
 // ---------------------------------------------------------------------------------------------
 // LLM (saludo, pregunta de casillero y profundización)
 // ---------------------------------------------------------------------------------------------
-const LLM_ACTIONS = new Set<Action["type"]>(["GREETING", "ASK_SLOT", "ASK_DEEPEN"]);
+// El saludo es fijo: así abrir la charla es instantáneo aunque Gemini esté lento o sin cuota.
+const LLM_ACTIONS = new Set<Action["type"]>(["ASK_SLOT", "ASK_DEEPEN"]);
+/** Si el LLM tarda más que esto en redactar una pregunta, se usa la plantilla (que ya es buena). */
+const LLM_QUESTION_MS = 8_000;
 const MAX_WORDS = 45;
 
 const normQ = (t: string) =>
@@ -188,7 +191,7 @@ export async function writeV2(provider: LLMProvider, s: SessionState, a: Action)
     let prompt = buildPromptV2(s, a);
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const draft = (await provider.text({ system: INTERVIEWER_V2_SYSTEM, prompt })).replace(/\*\*/g, "").trim();
+        const draft = (await provider.text({ system: INTERVIEWER_V2_SYSTEM, prompt, maxMs: LLM_QUESTION_MS })).replace(/\*\*/g, "").trim();
         const g = check(draft, "interview", said);
         if (draft.split(/\s+/).length > MAX_WORDS) g.reasons.push(`tiene más de ${MAX_WORDS} palabras`);
         if (repeats(s, draft)) g.reasons.push("repite una pregunta que ya hiciste");
