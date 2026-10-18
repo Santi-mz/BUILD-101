@@ -1,0 +1,1636 @@
+{
+  "nombre": "Catálogo de programas con fuente oficial · Uruguay",
+  "version": "0.3.0",
+  "fecha_verificacion": "2026-10-18",
+  "alcance": "Tecnología y datos (9), Organizar y emprender (10), Enseñar, cuidar y acompañar (5), Diseño, audio y creación (4), Hacer con las manos (5)",
+  "reglas": [
+    "Cada dato sale de la página oficial del programa indicada en url_programa, salvo que el campo *_fuente indique otra página oficial",
+    "Los campos no publicados dicen \"No consta en la fuente\"",
+    "No se afirma que haya inscripciones abiertas sin confirmación oficial vigente",
+    "Ningún registro es DEMO"
+  ],
+  "fuentes_no_verificadas": [
+    {
+      "institucion": "Udelar · Facultad de Arquitectura, Diseño y Urbanismo (FADU)",
+      "url": "https://www.fadu.edu.uy/",
+      "motivo": "El sitio responde 403 a la lectura automática; no se pudo verificar ninguna carrera de Diseño"
+    },
+    {
+      "institucion": "Udelar · Facultad de Enfermería",
+      "url": "https://www.fenf.edu.uy/ensenanza/area-academica/departamento-de-educacion/carrera-de-grado/",
+      "motivo": "Es un índice general de la carrera de grado, no la página del programa (se usó la del CURE)"
+    }
+  ],
+  "programas": [
+    {
+      "id": "udelar-fing-ingenieria-computacion",
+      "busqueda": [
+        "Ingeniería en Computación"
+      ],
+      "nombre_oficial": "Ingeniería en Computación",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Ingeniería",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "La página indica que es posible estudiarla total o parcialmente en Colonia, Paysandú, Salto y Tacuarembó (inscripción por «Trayectorias Ingeniería»)",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [
+        "Analista en Computación (3 años - 270 créditos)"
+      ],
+      "nivel": "Grado",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "5 años - 450 créditos",
+      "plan": "Plan de Estudios 2025",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.fing.edu.uy/es/carrera/grado/ingenier%C3%ADa-en-computaci%C3%B3n",
+      "pendientes": [
+        "título final",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.fing.edu.uy/es/carrera/grado/ingenier%C3%ADa-en-computaci%C3%B3n",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-fing-licenciatura-computacion",
+      "busqueda": [
+        "Ingeniería en Computación",
+        "Tecnologías de la Información"
+      ],
+      "nombre_oficial": "Licenciatura en Computación",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Ingeniería",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "Grado",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años, 360 créditos",
+      "plan": "Plan de Estudios 2025",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.fing.edu.uy/es/carrera/grado/lic-en-computaci%C3%B3n",
+      "pendientes": [
+        "título final",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.fing.edu.uy/es/carrera/grado/lic-en-computaci%C3%B3n",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-lic-ingenieria-datos-ia",
+      "busqueda": [
+        "Ciencia de Datos"
+      ],
+      "nombre_oficial": "Licenciatura en Ingeniería de Datos e Inteligencia Artificial",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Rivera"
+      ],
+      "departamentos": [
+        "Rivera"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [
+        "Tecnólogo en Análisis y Gestión de Datos"
+      ],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Presencial",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "Educación Media Superior aprobada; curso de admisión con actividades presenciales para todos los postulantes (no se requiere aprobar el examen para ingresar)",
+      "inscripciones": "La página indica que las preinscripciones a las carreras de grado de UTEC «inician generalmente en el mes de noviembre». No se confirma que estén abiertas.",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/licenciatura-en-ingenieria-de-datos-e-inteligencia-artificial/",
+      "pendientes": [
+        "título final",
+        "idioma",
+        "matrícula",
+        "becas"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/licenciatura-en-ingenieria-de-datos-e-inteligencia-artificial/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-lic-tecnologias-informacion",
+      "busqueda": [
+        "Tecnologías de la Información"
+      ],
+      "nombre_oficial": "Licenciatura en Tecnologías de la Información",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Durazno",
+        "Fray Bentos",
+        "Melo",
+        "Minas"
+      ],
+      "departamentos": [
+        "Durazno",
+        "Río Negro",
+        "Cerro Largo",
+        "Lavalleja"
+      ],
+      "departamentos_nota": "Derivados de las ciudades que nombra la página",
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "Licenciado/a en Tecnologías de la Información",
+      "titulos_intermedios": [
+        "Técnico/a Superior Universitario en Tecnologías de la Información (al cuarto semestre)"
+      ],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Híbrida",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años (8 semestres)",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "Egresados/as de cualquier orientación de Enseñanza Media Superior (Bachillerato) CES o DGETP–UTU; otros casos los analiza la Coordinación de la Carrera",
+      "inscripciones": "Preinscripción una vez al año, en general entre noviembre y diciembre. Las fechas publicadas corresponden al ciclo 2025-2026 y no confirman una inscripción vigente.",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/licenciatura-en-tecnologias-de-la-informacion/",
+      "pendientes": [
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/licenciatura-en-tecnologias-de-la-informacion/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-utu-udelar-tecnologo-informatica",
+      "busqueda": [
+        "Tecnologías de la Información",
+        "Ingeniería en Computación"
+      ],
+      "nombre_oficial": "Tecnólogo en Informática",
+      "institucion": "UTEC, DGETP-UTU y Udelar (titulación compartida; la gestiona una Comisión Mixta)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Maldonado",
+        "San José",
+        "Paysandú",
+        "Florida"
+      ],
+      "departamentos": [
+        "Maldonado",
+        "San José",
+        "Paysandú",
+        "Florida"
+      ],
+      "departamentos_nota": "Las sedes que nombra la página coinciden con capitales departamentales del mismo nombre",
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Presencial en San José, Florida y Maldonado; híbrida en Paysandú",
+      "idioma": "No consta en la fuente",
+      "duracion": "3 años (seis semestres)",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "Bachillerato culminado, aprobado y sin previas; si los inscriptos superan los cupos, se sortea",
+      "inscripciones": "Solo Florida tiene fechas publicadas (preinscripción del 6/4/26 al 17/4/26, inicio el 27/4/26), ya pasadas. No se confirma una inscripción vigente.",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/tecnologo-en-informatica/",
+      "pendientes": [
+        "título otorgado",
+        "nivel",
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/tecnologo-en-informatica/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-ia-ciencia-datos",
+      "busqueda": [
+        "Ciencia de Datos"
+      ],
+      "nombre_oficial": "Carrera en Inteligencia Artificial y Ciencia de Datos",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "Ingeniero/a en Inteligencia Artificial y Ciencia de Datos; Licenciado/a en Inteligencia Artificial y Ciencia de Datos",
+      "titulos_intermedios": [
+        "Analista de Datos (título técnico)"
+      ],
+      "nivel": "Carrera de nivel universitario reconocida por el MEC",
+      "modalidad": "Presencial",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés para egresar (B1 oral y escrito, B2 lectura), pero no indica el idioma de cursado",
+      "duracion": "5 años",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato con un curso de matemáticas (mínimo) en el último año",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-inteligencia-artificial-y-ciencia-de-datos",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-inteligencia-artificial-y-ciencia-de-datos--mvd--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "um-ingenieria-informatica",
+      "busqueda": [
+        "Ingeniería en Computación",
+        "Tecnologías de la Información"
+      ],
+      "nombre_oficial": "Ingeniería en Informática",
+      "institucion": "Universidad de Montevideo (UM)",
+      "facultad": "Facultad de Ingeniería",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "La página indica la «Sede Parque de Innovación del Latu», sin nombrar la ciudad",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "Grado (figura en «Carreras de grado»)",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Cinco años (diez semestres)",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.um.edu.uy/facultad-de-ingenieria/oferta-academica/grado/ingenieria-en-informatica",
+      "pendientes": [
+        "ciudad",
+        "título",
+        "modalidad",
+        "idioma",
+        "aranceles",
+        "becas",
+        "requisitos de ingreso",
+        "fechas de inscripción"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.um.edu.uy/facultad-de-ingenieria/oferta-academica/grado/ingenieria-en-informatica",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "um-ingenieria-datos-ia",
+      "busqueda": [
+        "Ciencia de Datos"
+      ],
+      "nombre_oficial": "Ingeniería de datos e inteligencia artificial",
+      "institucion": "Universidad de Montevideo (UM)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "La página indica la «Sede Parque de Innovación del Latu» (Av. María Luisa Saldún de Rodríguez 2097), sin nombrar la ciudad",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "No consta en la fuente",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Cinco años (diez semestres)",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.um.edu.uy/facultad-de-ingenieria/oferta-academica/grado/ingenieria-de-datos-e-inteligencia-artificial",
+      "pendientes": [
+        "facultad",
+        "ciudad",
+        "título",
+        "nivel",
+        "modalidad",
+        "idioma",
+        "aranceles",
+        "becas",
+        "requisitos de ingreso",
+        "fechas de inscripción"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.um.edu.uy/facultad-de-ingenieria/oferta-academica/grado/ingenieria-de-datos-e-inteligencia-artificial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ort-ingenieria-sistemas",
+      "busqueda": [
+        "Ingeniería en Computación",
+        "Tecnologías de la Información"
+      ],
+      "nombre_oficial": "Ingeniería en Sistemas",
+      "institucion": "Universidad ORT Uruguay",
+      "facultad": "Facultad de Ingeniería Ing. Bernard Wand-Polak",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "El pie de página lista los campus Centro y Pocitos (Montevideo), sin asociarlos a esta carrera",
+      "titulo_final": "Ingeniero/a en Sistemas",
+      "titulos_intermedios": [
+        "Licenciado/a en Ingeniería de Software (al cuarto año)",
+        "Analista en Sistemas (al tercer año; la página indica que está en trámite de reconocimiento)"
+      ],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Turno matutino: presencial del semestre 1 al 5 e híbrida (HyFlex®) desde el semestre 6; turno nocturno: híbrida (HyFlex®)",
+      "horario": "Mañana: lunes a viernes de 8:00 a 13:00 h; noche: lunes a jueves de 17:30 a 23:30 h",
+      "idioma": "No consta en la fuente",
+      "duracion": "5 años",
+      "plan": "No consta en la fuente",
+      "matricula": "Paga; el monto no figura (la página indica que «varía en función de distintos factores» y se informa en una entrevista)",
+      "becas": "La universidad ofrece becas generales para carreras universitarias (por ejemplo, Becas Concursables de hasta 50 % de descuento); todas requieren rendir la PAA. La página de becas no las asocia específicamente a esta carrera.",
+      "becas_fuente": {
+        "url": "https://www.ort.edu.uy/becas/becas-para-carreras-universitarias",
+        "alcance": "Becas generales de la universidad, no específicas de la carrera",
+        "http": 200
+      },
+      "requisitos_ingreso": "Educación Media Superior (EMS) completa de cualquier orientación salvo las opciones Creativo Artístico (con excepciones y vías alternativas que detalla la página)",
+      "inscripciones": "La página indica «Próximo comienzo: 15 de marzo, 2027» y una bonificación del 50 % en la primera cuota hasta el 16/11/26. No se afirma que la inscripción esté abierta.",
+      "url_programa": "https://fi.ort.edu.uy/ingenieria-en-sistemas",
+      "pendientes": [
+        "campus de la carrera",
+        "nivel",
+        "idioma",
+        "monto de matrícula",
+        "becas específicas"
+      ],
+      "area": "Tecnología y datos",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://fi.ort.edu.uy/ingenieria-en-sistemas",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-fcea-lic-economia",
+      "busqueda": [
+        "Economía"
+      ],
+      "nombre_oficial": "Licenciatura en Economía",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Ciencias Económicas y de Administración",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "La página indica «Locación: Montevideo, EVA»; no aclara la modalidad",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "Título de grado",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "8 semestres / 4 años · 360 créditos",
+      "plan": "Plan de estudios 2012",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "La página remite a la sección «Ingreso a la Facultad», sin detallarlos",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://fcea.udelar.edu.uy/ensenanza-dpto-economia/licenciatura-en-economia.html",
+      "pendientes": [
+        "nombre del título",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://fcea.udelar.edu.uy/ensenanza-dpto-economia/licenciatura-en-economia.html",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-fcea-contador-publico",
+      "busqueda": [
+        "Contador Público"
+      ],
+      "nombre_oficial": "Contador Público",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Ciencias Económicas y de Administración",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "La página indica «Locación: Montevideo, EVA»; no aclara la modalidad",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "Título de grado",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "8 semestres · 360 créditos",
+      "plan": "Plan 2024 (la página también presenta el Plan 2012)",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "La página remite a la sección «Ingreso a la Facultad», sin detallarlos",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://fcea.udelar.edu.uy/ensenanza/las-carreras-de-fcea/7538-contador-publico-2024.html",
+      "pendientes": [
+        "nombre del título",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://fcea.udelar.edu.uy/ensenanza/las-carreras-de-fcea/7538-contador-publico-2024.html",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ort-lic-gerencia-administracion",
+      "busqueda": [
+        "Administración y negocios",
+        "Marketing"
+      ],
+      "nombre_oficial": "Licenciatura en Gerencia y Administración",
+      "institucion": "Universidad ORT Uruguay",
+      "facultad": "Facultad de Administración y Ciencias Sociales",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "El pie de página lista los campus Centro y Pocitos (Montevideo), sin asociarlos a esta carrera",
+      "titulo_final": "Licenciado/a en Gerencia y Administración (con orientaciones en Marketing, Administración Financiera o Dirección Estratégica)",
+      "titulos_intermedios": [
+        "Analista en Administración (a los dos años)"
+      ],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Presencial (las clases pueden seguirse a distancia con HyFlex®; las evaluaciones principales son presenciales)",
+      "horario": "Matutino: lunes a jueves de 8:00 a 12:00 h (solo inicio en marzo); nocturno: lunes a jueves de 18:30 a 22:30 h",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años",
+      "plan": "No consta en la fuente",
+      "matricula": "Paga; el monto no figura (la página indica que «el valor final de las cuotas varía en función de distintos factores»)",
+      "becas": "La universidad otorga «más de 1000 becas por año dirigidas a nuevos estudiantes» (beca general, la página no la asocia a esta carrera)",
+      "requisitos_ingreso": "Educación Media Superior (EMS) completa de cualquier orientación (la página detalla otras vías y el ingreso condicional con hasta dos materias pendientes)",
+      "inscripciones": "La página indica «Próximo comienzo: 15 de marzo, 2027» y una bonificación del 50 % en la primera cuota hasta el 16/11/26. No se afirma que la inscripción esté abierta.",
+      "url_programa": "https://facs.ort.edu.uy/licenciatura-en-gerencia-y-administracion",
+      "pendientes": [
+        "campus de la carrera",
+        "nivel",
+        "idioma",
+        "monto de matrícula",
+        "becas específicas"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://facs.ort.edu.uy/licenciatura-en-gerencia-y-administracion",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ort-lic-economia",
+      "busqueda": [
+        "Economía"
+      ],
+      "nombre_oficial": "Licenciatura en Economía",
+      "institucion": "Universidad ORT Uruguay",
+      "facultad": "Facultad de Administración y Ciencias Sociales",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "El pie de página lista los campus Centro y Pocitos (Montevideo), sin asociarlos a esta carrera",
+      "titulo_final": "Licenciado/a en Economía (también con orientación Finanzas u orientación Economía Empresarial)",
+      "titulos_intermedios": [
+        "Analista Económico/a (a los dos años)"
+      ],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Presencial (las clases pueden seguirse a distancia con HyFlex®; las evaluaciones principales son presenciales)",
+      "horario": "Lunes a jueves de 8:00 a 12:00 h, sin contar las prácticas",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años",
+      "plan": "No consta en la fuente",
+      "matricula": "Paga; el monto no figura (la página indica que «el valor final de las cuotas varía en función de distintos factores»)",
+      "becas": "La universidad otorga «más de 1000 becas por año dirigidas a nuevos estudiantes» (beca general, la página no la asocia a esta carrera)",
+      "requisitos_ingreso": "Educación Media Superior (EMS) completa de cualquier orientación (la página detalla otras vías y el ingreso condicional)",
+      "inscripciones": "La página indica «Próximo comienzo: 15 de marzo, 2027» y una bonificación del 50 % en la primera cuota hasta el 16/11/26. No se afirma que la inscripción esté abierta.",
+      "url_programa": "https://facs.ort.edu.uy/licenciatura-en-economia",
+      "pendientes": [
+        "campus de la carrera",
+        "nivel",
+        "idioma",
+        "monto de matrícula",
+        "becas específicas"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://facs.ort.edu.uy/licenciatura-en-economia",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-negocios-economia",
+      "busqueda": [
+        "Economía",
+        "Administración y negocios"
+      ],
+      "nombre_oficial": "Carrera en Negocios y Economía",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Punta del Este"
+      ],
+      "departamentos": [
+        "Maldonado"
+      ],
+      "departamentos_nota": "Derivado de la ciudad del campus que nombra la página",
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "Licenciado/a en Negocios y Economía",
+      "titulos_intermedios": [
+        "Analista en Negocios y Economía"
+      ],
+      "nivel": "Carrera reconocida; nuevo plan en proceso de reconocimiento ante el MEC",
+      "modalidad": "Presencial",
+      "horario": "Turno matutino (08:00 a 12:20 h)",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés nivel B2 (First Certificate) para egresar, pero no indica el idioma de cursado",
+      "duracion": "4 años",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato de todas las orientaciones",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-negocios-y-economia",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-negocios-y-economia--pde--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-comunicacion-marketing",
+      "busqueda": [
+        "Marketing"
+      ],
+      "nombre_oficial": "Carrera en Comunicación y Marketing",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Punta del Este"
+      ],
+      "departamentos": [
+        "Maldonado"
+      ],
+      "departamentos_nota": "Derivado de la ciudad del campus que nombra la página",
+      "otras_localidades": "No consta en la fuente",
+      "titulo_final": "Lic. en Comunicación y Marketing",
+      "titulos_intermedios": [
+        "Técnico en Contenidos Digitales"
+      ],
+      "nivel": "Carrera de nivel universitario reconocida por el MEC",
+      "modalidad": "Presencial",
+      "horario": "Turno matutino (08:00 a 12:20 h) y turno vespertino (18:15 a 22:35 h)",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés (B1 y B2 de Cambridge) para egresar, pero no indica el idioma de cursado",
+      "duracion": "4 años",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato de todas las orientaciones",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-comunicacion-y-marketing",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-comunicacion-y-marketing--pde--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "um-lic-marketing",
+      "busqueda": [
+        "Marketing"
+      ],
+      "nombre_oficial": "Licenciatura en Marketing",
+      "institucion": "Universidad de Montevideo (UM)",
+      "facultad": "La página indica que combina la Facultad de Ciencias Empresariales y Economía y la Facultad de Comunicación",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "Sede Parque de Innovación del LATU (Av. María Luisa Saldún de Rodríguez 2097); la página no nombra la ciudad",
+      "titulo_final": "Licenciado/a en marketing",
+      "titulos_intermedios": [],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Presencial en el edificio UM del Parque de Innovación del LATU",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.um.edu.uy/facultad-de-ciencias-empresariales-y-economia/oferta-academica/grado/licenciatura-en-marketing",
+      "pendientes": [
+        "ciudad",
+        "nivel",
+        "idioma",
+        "aranceles",
+        "becas",
+        "requisitos de ingreso",
+        "fechas de inscripción"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.um.edu.uy/facultad-de-ciencias-empresariales-y-economia/oferta-academica/grado/licenciatura-en-marketing",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "um-direccion-administracion-empresas",
+      "busqueda": [
+        "Administración y negocios"
+      ],
+      "nombre_oficial": "Dirección y Administración de Empresas",
+      "institucion": "Universidad de Montevideo (UM)",
+      "facultad": "Facultad de Ciencias Empresariales y Economía",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "El pie de página lista la Sede Parque de Innovación del LATU, sin asociarla a esta carrera",
+      "titulo_final": "Licenciado en Dirección y Administración de Empresas de la UM",
+      "titulos_intermedios": [],
+      "titulos_nota": "Las electivas pueden llevar a diplomas en Finanzas, Marketing o Emprendimiento e Innovación",
+      "nivel": "No consta en la fuente",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Cuatro años (ocho semestres)",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.um.edu.uy/facultad-de-ciencias-empresariales-y-economia/oferta-academica/grado/direccion-y-administracion-de",
+      "pendientes": [
+        "sede y ciudad",
+        "nivel",
+        "modalidad",
+        "idioma",
+        "aranceles",
+        "becas",
+        "requisitos de ingreso",
+        "fechas de inscripción"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.um.edu.uy/facultad-de-ciencias-empresariales-y-economia/oferta-academica/grado/direccion-y-administracion-de",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ude-lic-administracion-empresas",
+      "busqueda": [
+        "Administración y negocios"
+      ],
+      "nombre_oficial": "Licenciatura en Administración de Empresas",
+      "institucion": "Universidad de la Empresa (UDE)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "El formulario de contacto lista sedes (Campus Virtual, Montevideo, Punta del Este, Colonia, Ciudad de la Costa) sin indicar dónde se dicta la carrera",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "titulos_nota": "La página menciona una doble titulación internacional con la Universidad de Trento (Italia), sin detallar el título",
+      "nivel": "No consta en la fuente",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Ocho semestres (según el plan de estudios que muestra la página)",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "Bachillerato aprobado en cualquiera de las orientaciones; quienes tengan asignaturas previas deben aprobarlas antes de terminar el primer semestre",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://ude.edu.uy/facultades-de-ciencias-empresariales/licenciatura-en-administracion-de-empresas/",
+      "pendientes": [
+        "facultad",
+        "sede y ciudad",
+        "nombre del título",
+        "modalidad",
+        "idioma",
+        "aranceles",
+        "becas",
+        "fechas de inscripción"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://ude.edu.uy/facultades-de-ciencias-empresariales/licenciatura-en-administracion-de-empresas/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ude-lic-marketing",
+      "busqueda": [
+        "Marketing"
+      ],
+      "nombre_oficial": "Licenciatura en Marketing",
+      "institucion": "Universidad de la Empresa (UDE)",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "El formulario de contacto lista sedes (Campus Virtual, Montevideo, Punta del Este, Colonia, Ciudad de la Costa) sin indicar dónde se dicta la carrera",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "No consta en la fuente",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Ocho semestres",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "Bachillerato aprobado en cualquiera de las orientaciones; quienes tengan asignaturas previas deben aprobarlas antes de terminar el primer semestre",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://ude.edu.uy/facultades-de-ciencias-empresariales/licenciatura-en-marketing/",
+      "pendientes": [
+        "facultad",
+        "sede y ciudad",
+        "nombre del título",
+        "modalidad",
+        "idioma",
+        "aranceles",
+        "becas",
+        "fechas de inscripción"
+      ],
+      "area": "Organizar y emprender",
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://ude.edu.uy/facultades-de-ciencias-empresariales/licenciatura-en-marketing/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-psicologia-licenciatura",
+      "area": "Enseñar, cuidar y acompañar",
+      "busqueda": [
+        "Psicología"
+      ],
+      "nombre_oficial": "Licenciatura en Psicología",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Psicología",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "La página lista los edificios de la Facultad en Montevideo y sedes de CENUR (Paysandú, Salto, Maldonado), sin indicar dónde se dicta la carrera",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "No consta en la fuente",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Ciclo Inicial de dos semestres, Ciclo de Formación Integral de cuatro semestres y Ciclo de Graduación de dos semestres (la página no indica la duración total)",
+      "plan": "Plan de Estudio 2013",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://psico.edu.uy/ensenanza/grado/licenciatura/plan",
+      "url_nota": "Página oficial del plan de estudios de la carrera",
+      "pendientes": [
+        "ciudad",
+        "título",
+        "modalidad",
+        "idioma",
+        "duración total",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://psico.edu.uy/ensenanza/grado/licenciatura/plan",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-cure-enfermeria-rocha",
+      "area": "Enseñar, cuidar y acompañar",
+      "busqueda": [
+        "Enfermería"
+      ],
+      "nombre_oficial": "Licenciatura en Enfermería",
+      "institucion": "Universidad de la República (Udelar) · CURE",
+      "facultad": "Centro Universitario de la Región Este (servicio de referencia: Facultad de Enfermería)",
+      "ciudades": [
+        "Rocha"
+      ],
+      "departamentos": [
+        "Rocha"
+      ],
+      "otras_localidades": "La página indica que la carrera «se desarrolla de forma completa en la sede Rocha»",
+      "titulo_final": "Licenciado en enfermería",
+      "titulos_intermedios": [
+        "Auxiliar en enfermería"
+      ],
+      "nivel": "No consta en la fuente",
+      "modalidad": "Presencial «en la mayoría de los casos»",
+      "idioma": "No consta en la fuente",
+      "duracion": "4 años y un semestre",
+      "plan": "Plan 2016",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "Bachillerato aprobado en cualquiera de sus orientaciones de la enseñanza media superior",
+      "inscripciones": "La página indica «Inscripciones 2026: la Licenciatura en Enfermería NO abre inscripciones este año». No hay inscripción vigente confirmada.",
+      "url_programa": "https://www.cure.edu.uy/ensenanza/oferta-educativa/licenciatura-en-enfermeria/",
+      "pendientes": [
+        "idioma",
+        "becas",
+        "próxima apertura de inscripciones"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.cure.edu.uy/ensenanza/oferta-educativa/licenciatura-en-enfermeria/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-licenciatura-enfermeria",
+      "area": "Enseñar, cuidar y acompañar",
+      "busqueda": [
+        "Enfermería"
+      ],
+      "nombre_oficial": "Licenciatura en Enfermería",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "titulo_final": "Licenciado/a en Enfermería",
+      "titulos_intermedios": [
+        "Auxiliar de Enfermería Integral"
+      ],
+      "nivel": "Carrera de nivel universitario reconocida por el MEC",
+      "horario": "Turno matutino (08:00 a 12:20 h)",
+      "duracion": "4 años",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/licenciatura-en-enfermeria",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "modalidad": "Presencial",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés (B1 y B2 de Cambridge) para egresar, pero no indica el idioma de cursado",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato de todas las orientaciones",
+      "inscripciones": "No consta en la fuente",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/licenciatura-en-enfermeria--mvd--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-licenciatura-trabajo-social",
+      "area": "Enseñar, cuidar y acompañar",
+      "busqueda": [
+        "Trabajo social"
+      ],
+      "nombre_oficial": "Licenciatura en Trabajo Social",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "titulo_final": "Licenciado/a en Trabajo Social",
+      "titulos_intermedios": [],
+      "nivel": "Carrera de nivel universitario reconocida por el MEC",
+      "horario": "Matutino en 1.º y 2.º año; vespertino en 3.º y 4.º",
+      "duracion": "4 años",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/licenciatura-en-trabajo-social",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "modalidad": "Presencial",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés (B1 y B2 de Cambridge) para egresar, pero no indica el idioma de cursado",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato de todas las orientaciones",
+      "inscripciones": "No consta en la fuente",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/licenciatura-en-trabajo-social--mvd--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-licenciatura-educacion",
+      "area": "Enseñar, cuidar y acompañar",
+      "busqueda": [
+        "Educación"
+      ],
+      "nombre_oficial": "Licenciatura en Educación",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "titulo_final": "Licenciado/a en Educación",
+      "titulos_intermedios": [
+        "Técnico/a en Educación y Recreación"
+      ],
+      "nivel": "Carrera de nivel universitario reconocida por el MEC",
+      "horario": "Matutino en 1.º y 2.º año; vespertino en 3.º y 4.º",
+      "duracion": "4 años",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/licenciatura-en-educacion",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "modalidad": "Presencial",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés (B1 y B2 de Cambridge) para egresar, pero no indica el idioma de cursado",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato de todas las orientaciones",
+      "inscripciones": "No consta en la fuente",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/licenciatura-en-educacion--mvd--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-lic-jazz-musica-creativa",
+      "area": "Diseño, audio y creación",
+      "busqueda": [
+        "Música"
+      ],
+      "nombre_oficial": "Licenciatura en Jazz y Música Creativa",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "otras_localidades": "No consta en la fuente",
+      "nivel": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "inscripciones": "La página indica que las preinscripciones a las carreras de grado de UTEC «inician generalmente en el mes de noviembre». No se confirma que estén abiertas.",
+      "ciudades": [
+        "Mercedes"
+      ],
+      "departamentos": [
+        "Soriano"
+      ],
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [
+        "Tecnólogo en Jazz y Música Creativa (al completar el tercer año)"
+      ],
+      "modalidad": "Semipresencial (clases virtuales entre semana y presenciales tres días consecutivos por semana)",
+      "duracion": "4 años",
+      "requisitos_ingreso": "Egresados de Educación Media Superior (CES o DGETP-UTU), o ingreso especial por acreditación de saberes; evaluación diagnóstica no eliminatoria",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/licenciatura-en-jazz-y-musica-creativa/",
+      "pendientes": [
+        "título final",
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/licenciatura-en-jazz-y-musica-creativa/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-tec-comunicacion-creativa",
+      "area": "Diseño, audio y creación",
+      "busqueda": [
+        "Contenidos digitales"
+      ],
+      "nombre_oficial": "Tecnicatura en Comunicación Creativa y Entretenimiento Digital",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "otras_localidades": "No consta en la fuente",
+      "nivel": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "inscripciones": "La página indica que las preinscripciones a las carreras de grado de UTEC «inician generalmente en el mes de noviembre». No se confirma que estén abiertas.",
+      "ciudades": [
+        "Minas"
+      ],
+      "departamentos": [
+        "Lavalleja"
+      ],
+      "titulo_final": "Técnico/a Universitario/a en Comunicación Creativa y Entretenimiento Digital",
+      "titulos_intermedios": [],
+      "modalidad": "Semipresencial (clases presenciales en UTEC Minas)",
+      "duracion": "2 años",
+      "requisitos_ingreso": "Egresado/a de cualquier orientación de Educación Media Superior, o ingreso especial por acreditación de saberes; curso de admisión obligatorio. La página indica que no tiene límite de cupos",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/tecnicatura-en-comunicacion-creativa-y-entretenimiento-digital/",
+      "pendientes": [
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/tecnicatura-en-comunicacion-creativa-y-entretenimiento-digital/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-fic-licenciatura-comunicacion",
+      "area": "Diseño, audio y creación",
+      "busqueda": [
+        "Comunicación"
+      ],
+      "nombre_oficial": "Licenciatura en Comunicación",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Información y Comunicación",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "La página solo muestra la dirección de contacto (San Salvador 1944, Montevideo)",
+      "titulo_final": "Licenciado en Comunicación (el mismo título para las siete orientaciones)",
+      "titulos_intermedios": [],
+      "nivel": "No consta en la fuente",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "Ocho semestres · 360 créditos",
+      "plan": "Plan de Estudios 2012",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.fic.edu.uy/index.php/ensenanza/grado/lic-en-comunicacion",
+      "pendientes": [
+        "ciudad",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.fic.edu.uy/index.php/ensenanza/grado/lic-en-comunicacion",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "ucu-licenciatura-comunicacion",
+      "area": "Diseño, audio y creación",
+      "busqueda": [
+        "Comunicación"
+      ],
+      "nombre_oficial": "Carrera en Comunicación",
+      "institucion": "Universidad Católica del Uruguay (UCU)",
+      "titulo_final": "Licenciado/a en Comunicación",
+      "titulos_intermedios": [],
+      "nivel": "Carrera de nivel universitario reconocida por el MEC",
+      "horario": "Turno matutino (08:00 a 12:20 h) y vespertino (18:15 a 22:35 h)",
+      "duracion": "4 años",
+      "url_programa": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-comunicacion",
+      "facultad": "No consta en la fuente",
+      "ciudades": [
+        "Montevideo"
+      ],
+      "departamentos": [
+        "Montevideo"
+      ],
+      "otras_localidades": "No consta en la fuente",
+      "modalidad": "Presencial",
+      "idioma": "No consta en la fuente",
+      "idioma_nota": "La página exige inglés (B1 y B2 de Cambridge) para egresar, pero no indica el idioma de cursado",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "becas_nota": "El sitio menciona un «Concurso de Becas» general, sin datos para esta carrera",
+      "requisitos_ingreso": "Bachillerato de todas las orientaciones",
+      "inscripciones": "No consta en la fuente",
+      "pendientes": [
+        "facultad",
+        "idioma de cursado",
+        "aranceles",
+        "becas de la carrera",
+        "fechas de inscripción"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://carreras.ucu.edu.uy/programas/ver/carrera-en-comunicacion--mvd--presencial",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-ingenieria-mecatronica",
+      "area": "Hacer con las manos",
+      "busqueda": [
+        "Mecatrónica y automatización"
+      ],
+      "nombre_oficial": "Ingeniería en Mecatrónica",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "otras_localidades": "No consta en la fuente",
+      "nivel": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "inscripciones": "La página indica que las preinscripciones a las carreras de grado de UTEC «inician generalmente en el mes de noviembre». No se confirma que estén abiertas.",
+      "ciudades": [
+        "Fray Bentos"
+      ],
+      "departamentos": [
+        "Río Negro"
+      ],
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [
+        "Tecnólogo/a en Mecatrónica (titulación compartida con DGETP/UTU, al finalizar el tercer año)"
+      ],
+      "modalidad": "Semipresencial",
+      "duracion": "5 años",
+      "requisitos_ingreso": "Egresados de Educación Media Superior en las orientaciones que lista la página (CES y DGETP-UTU), y otras vías de ingreso que detalla",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/ingenieria-en-mecatronica/",
+      "pendientes": [
+        "título final",
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/ingenieria-en-mecatronica/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-ingenieria-control-automatica",
+      "area": "Hacer con las manos",
+      "busqueda": [
+        "Mecatrónica y automatización"
+      ],
+      "nombre_oficial": "Ingeniería en Control y Automática",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "otras_localidades": "No consta en la fuente",
+      "nivel": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "inscripciones": "La página indica que las preinscripciones a las carreras de grado de UTEC «inician generalmente en el mes de noviembre». No se confirma que estén abiertas.",
+      "ciudades": [
+        "Rivera"
+      ],
+      "departamentos": [
+        "Rivera"
+      ],
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [
+        "Tecnólogo en Mecatrónica Industrial (al culminar los primeros tres años)"
+      ],
+      "modalidad": "Presencial",
+      "duracion": "5 años",
+      "requisitos_ingreso": "Egresados de Educación Media Superior en las orientaciones que lista la página (CES y DGETP-UTU); otros perfiles si quedan cupos",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/ingenieria-en-control-y-automatica/",
+      "pendientes": [
+        "título final",
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/ingenieria-en-control-y-automatica/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "utec-ingenieria-energias-renovables",
+      "area": "Hacer con las manos",
+      "busqueda": [
+        "Energías renovables"
+      ],
+      "nombre_oficial": "Ingeniería en Energías Renovables",
+      "institucion": "Universidad Tecnológica del Uruguay (UTEC)",
+      "facultad": "No consta en la fuente",
+      "otras_localidades": "No consta en la fuente",
+      "nivel": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "plan": "No consta en la fuente",
+      "matricula": "No consta en la fuente",
+      "becas": "No consta en la fuente",
+      "inscripciones": "La página indica que las preinscripciones a las carreras de grado de UTEC «inician generalmente en el mes de noviembre». No se confirma que estén abiertas.",
+      "ciudades": [
+        "Durazno"
+      ],
+      "departamentos": [
+        "Durazno"
+      ],
+      "titulo_final": "Ingeniero en Energías Renovables (con especializaciones en energía solar y eólica)",
+      "titulos_intermedios": [
+        "Tecnólogo en Energías Renovables (al culminar el sexto semestre)"
+      ],
+      "modalidad": "Presencial",
+      "duracion": "5 años",
+      "requisitos_ingreso": "Para primer año, egresados de las opciones de Educación Media Superior (CES y DGETP-UTU) que lista la página; hay otras vías de ingreso al séptimo semestre",
+      "url_programa": "https://utec.edu.uy/es/educacion/carrera/ingenieria-en-energias-renovables/",
+      "pendientes": [
+        "idioma",
+        "matrícula",
+        "becas",
+        "fechas de inscripción vigentes"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://utec.edu.uy/es/educacion/carrera/ingenieria-en-energias-renovables/",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-fing-ingenieria-civil",
+      "area": "Hacer con las manos",
+      "busqueda": [
+        "Ingeniería civil"
+      ],
+      "nombre_oficial": "Ingeniería Civil",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Ingeniería",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "La página solo muestra la dirección de la Facultad (Julio Herrera y Reissig 565, Montevideo), sin indicar dónde se dicta la carrera",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "Grado",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "5 años - 450 créditos",
+      "plan": "Plan de Estudios 2021",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.fing.edu.uy/es/carrera/grado/ingenier%C3%ADa-civil",
+      "pendientes": [
+        "ciudad",
+        "título",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.fing.edu.uy/es/carrera/grado/ingenier%C3%ADa-civil",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    },
+    {
+      "id": "udelar-fing-ingenieria-industrial-mecanica",
+      "area": "Hacer con las manos",
+      "busqueda": [
+        "Ingeniería mecánica"
+      ],
+      "nombre_oficial": "Ingeniería Industrial Mecánica",
+      "institucion": "Universidad de la República (Udelar)",
+      "facultad": "Facultad de Ingeniería",
+      "ciudades": [
+        "No consta en la fuente"
+      ],
+      "departamentos": [
+        "No consta en la fuente"
+      ],
+      "otras_localidades": "La página solo muestra la dirección de la Facultad (Julio Herrera y Reissig 565, Montevideo), sin indicar dónde se dicta la carrera",
+      "titulo_final": "No consta en la fuente",
+      "titulos_intermedios": [],
+      "nivel": "Grado",
+      "modalidad": "No consta en la fuente",
+      "idioma": "No consta en la fuente",
+      "duracion": "5 años - 450 créditos",
+      "plan": "Plan de estudios aprobado en 1997",
+      "matricula": "Gratuita según la Udelar (la página de la carrera no lo indica)",
+      "matricula_fuente": {
+        "url": "https://udelar.edu.uy/",
+        "cita": "sus carreras de grado son abiertas y gratuitas",
+        "alcance": "Afirmación institucional de la Udelar, no de la página de la carrera",
+        "http": 200
+      },
+      "becas": "No consta en la fuente",
+      "requisitos_ingreso": "No consta en la fuente",
+      "inscripciones": "No consta en la fuente",
+      "url_programa": "https://www.fing.edu.uy/es/carrera/grado/ingenier%C3%ADa-industrial-mec%C3%A1nica",
+      "pendientes": [
+        "ciudad",
+        "título",
+        "modalidad",
+        "idioma",
+        "requisitos de ingreso",
+        "becas"
+      ],
+      "enlace_verificado": {
+        "http": 200,
+        "url_final": "https://www.fing.edu.uy/es/carrera/grado/ingenier%C3%ADa-industrial-mec%C3%A1nica",
+        "fecha": "2026-10-18"
+      },
+      "fecha_verificacion": "2026-10-18",
+      "estado_verificacion": "verificado",
+      "datos_completos": false
+    }
+  ]
+}
