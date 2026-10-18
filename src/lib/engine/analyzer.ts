@@ -237,7 +237,8 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
       return spans.some(([from, to]) => at >= from && at < to);
     };
     const positives = areas.filter((a) => !negated(a));
-    const concrete = positives.length > 0 && CONCRETE.test(c);
+    // Concreto salvo que todo lo nombrado esté negado ("con mis amigos, todos los viernes" no nombra un área y es concreto).
+    const concrete = CONCRETE.test(c) && (positives.length > 0 || areas.length === 0);
     for (const area of areas) {
       const pol = negated(area) ? -1 : 1;
       push({ indicatorId: `N2.${area}`, area, polarity: pol, kind: "DECLARED", concrete: pol === 1 && concrete, quote });
