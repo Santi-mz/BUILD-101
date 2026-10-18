@@ -10,6 +10,9 @@ import type { Area } from "@/lib/rubric";
 import type { Filters, Route } from "@/lib/engine/types";
 
 const AREAS: Area[] = ["R", "I", "A", "S", "E", "C"];
+/** Letra RIASEC destacada → área de /donde-estudiar (equivalencia propuesta en su README). */
+const AREA_DONDE: Record<string, string> = { I: "tec", C: "tec", E: "emp", S: "per", A: "cre", R: "man" };
+
 const TYPE_LABEL: Record<string, string> = {
   degree: "Carrera",
   technical: "Tecnicatura o formación técnica",
@@ -159,8 +162,9 @@ export default function Result() {
         )}
       </section>
 
-      {/* Etapa 2: «Dónde estudiar» (catálogo real de Uruguay). Contrato del README de /donde-estudiar: solo las letras
-          destacadas (?riasec=), sin elegir el área por la persona; sin letras o con perfil provisional, sin promesas. */}
+      {/* Etapa 2: «Dónde estudiar» (catálogo real de Uruguay, README de /donde-estudiar). Manda las letras destacadas
+          (?riasec=) y preselecciona el área de la primera con la equivalencia del README (decisión de Marto, 18/10);
+          la persona la puede cambiar. Sin letras o con perfil provisional, el texto no promete nada. */}
       {done && (
         <section className="rounded-2xl border-2 border-accent bg-accent-soft p-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-accent">Etapa 2</p>
@@ -171,7 +175,7 @@ export default function Result() {
               : "Mirá carreras y programas reales de Uruguay, cada uno con su página oficial."}
           </p>
           <Link
-            href={p.top.length ? `/donde-estudiar?riasec=${p.top.join(",")}` : "/donde-estudiar"}
+            href={p.top.length ? `/donde-estudiar?area=${AREA_DONDE[p.top[0]] ?? "tec"}&riasec=${p.top.join(",")}` : "/donde-estudiar"}
             className="mt-4 inline-block rounded-full bg-accent px-6 py-3 font-medium text-background"
           >
             Ver dónde estudiar →
@@ -193,7 +197,19 @@ export default function Result() {
         </div>
       </details>
 
-      {done && <Paths view={view} busy={busy} act={act} />}
+      {/* En v2 la Etapa 2 principal es «Dónde estudiar» (programas reales). «Caminos para investigar» trae ejemplos
+          DEMO: queda plegado abajo, oculto pero sin borrar (regla de la spec de la demo). */}
+      {done &&
+        (v2 ? (
+          <details className="rounded-2xl border border-border bg-card p-6">
+            <summary className="cursor-pointer font-semibold">Otros caminos para investigar (incluye ejemplos)</summary>
+            <div className="mt-4">
+              <Paths view={view} busy={busy} act={act} />
+            </div>
+          </details>
+        ) : (
+          <Paths view={view} busy={busy} act={act} />
+        ))}
 
       {error && <p className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
 
