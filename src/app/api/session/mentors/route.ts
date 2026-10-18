@@ -18,5 +18,5 @@ export async function POST(req: Request) {
     s.mentorResult = result;
     s.phase = "MATCHING_HUMANS";
     logEvent("mentor.search.demo", { session: s.id, path: input.pathId, matches: result.matches.length });
-  });
+  }, req);
 }
