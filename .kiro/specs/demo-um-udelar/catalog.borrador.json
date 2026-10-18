@@ -1,0 +1,443 @@
+{
+  "version": "1.0.0-borrador",
+  "nota": "BORRADOR para verificación humana. Las URLs se vieron en los listados oficiales el 17/10/2026 (udelar.edu.uy/carreras y la portada de um.edu.uy). 'areas' y 'activity_tags' son etiquetas editoriales del equipo, no una medición. Antes de copiar a src/data/catalog.um-udelar.v1.json: abrir cada URL, completar summary_plain y facts SOLO con lo que diga la página, poner checked_at y checked_by, ajustar unknowns y borrar los campos '_pista'. Ningún dato puede generarlo un LLM.",
+  "items": [
+    {
+      "id": "udelar-ing-computacion",
+      "institution": "Udelar",
+      "title": "Ingeniería en Computación",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/ingenieria-en-computacion",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "I",
+        "R",
+        "C"
+      ],
+      "activity_tags": [
+        "programar",
+        "computadoras",
+        "tecnologia",
+        "resolver problemas",
+        "entender como funcionan las cosas",
+        "matematica"
+      ],
+      "avoid_tags": [
+        "sangre"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ],
+      "_pista": "Vista el 17/10/2026 en la ficha: 'Duración (meses): 60', 'Créditos: 450', 'Sede: Facultad de Ingeniería', requisito: Bachillerato opción Físico-Matemática. CONFIRMAR y pasar a facts."
+    },
+    {
+      "id": "udelar-medicina",
+      "institution": "Udelar",
+      "title": "Doctor en Medicina",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/doctor-en-medicina",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "I",
+        "S"
+      ],
+      "activity_tags": [
+        "salud",
+        "cuerpo humano",
+        "ayudar",
+        "ciencia",
+        "biologia",
+        "cuidar personas"
+      ],
+      "avoid_tags": [
+        "sangre"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "udelar-psicologia",
+      "institution": "Udelar",
+      "title": "Licenciatura en Psicología",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/licenciatura-en-psicologia",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "S",
+        "I"
+      ],
+      "activity_tags": [
+        "escuchar",
+        "ayudar",
+        "entender a las personas",
+        "acompanar",
+        "conversar"
+      ],
+      "avoid_tags": [],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "udelar-diseno-industrial",
+      "institution": "Udelar",
+      "title": "Licenciatura en Diseño Industrial",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/licenciatura-en-diseno-industrial",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "A",
+        "R"
+      ],
+      "activity_tags": [
+        "dibujar",
+        "crear",
+        "disenar objetos",
+        "armar cosas",
+        "maquetas"
+      ],
+      "avoid_tags": [],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "udelar-educacion-fisica",
+      "institution": "Udelar",
+      "title": "Licenciatura en Educación Física",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/licenciatura-en-educacion-fisica-0",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "S",
+        "R"
+      ],
+      "activity_tags": [
+        "deporte",
+        "entrenar",
+        "ensenar",
+        "cuerpo",
+        "actividad fisica",
+        "grupos"
+      ],
+      "avoid_tags": [
+        "oficina"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "udelar-lenguajes-audiovisuales",
+      "institution": "Udelar",
+      "title": "Licenciatura en Lenguajes y Medios Audiovisuales",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/licenciatura-en-lenguajes-y-medios-audiovisuales",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "A"
+      ],
+      "activity_tags": [
+        "video",
+        "cine",
+        "fotografia",
+        "editar",
+        "contar historias",
+        "musica"
+      ],
+      "avoid_tags": [],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "udelar-veterinaria",
+      "institution": "Udelar",
+      "title": "Doctor en Ciencias Veterinarias",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://udelar.edu.uy/carrera/doctor-en-ciencias-veterinarias",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "R",
+        "I"
+      ],
+      "activity_tags": [
+        "animales",
+        "campo",
+        "naturaleza",
+        "salud animal",
+        "biologia"
+      ],
+      "avoid_tags": [
+        "sangre"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "um-ing-datos-ia",
+      "institution": "UM",
+      "title": "Ingeniería de Datos e Inteligencia Artificial",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://www.um.edu.uy/index%2Ephp/facultad-de-ingenieria/oferta-academica/grado/ingenieria-de-datos-e-inteligencia-artificial",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "I",
+        "C"
+      ],
+      "activity_tags": [
+        "datos",
+        "programar",
+        "inteligencia artificial",
+        "matematica",
+        "tecnologia",
+        "resolver problemas"
+      ],
+      "avoid_tags": [
+        "numeros"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ],
+      "_pista": "Confirmar la URL canónica sin 'index%2Ephp/'."
+    },
+    {
+      "id": "um-comunicacion",
+      "institution": "UM",
+      "title": "Licenciatura en Comunicación",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://www.um.edu.uy/facultad-de-comunicacion/oferta-academica/grado/licenciatura-en-comunicacion",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "A",
+        "E",
+        "S"
+      ],
+      "activity_tags": [
+        "escribir",
+        "video",
+        "periodismo",
+        "redes",
+        "contar historias",
+        "hablar en publico"
+      ],
+      "avoid_tags": [
+        "publico"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ],
+      "_pista": "Vista el 17/10/2026: 'Duración de la carrera: 4 años'. No muestra modalidad, horario, requisitos ni costo. CONFIRMAR y pasar a facts."
+    },
+    {
+      "id": "um-direccion-empresas",
+      "institution": "UM",
+      "title": "Dirección y Administración de Empresas",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://www.um.edu.uy/facultad-de-ciencias-empresariales-y-economia/oferta-academica/grado/direccion-y-administracion-de",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "E",
+        "C"
+      ],
+      "activity_tags": [
+        "organizar",
+        "liderar",
+        "negocios",
+        "emprender",
+        "gestionar",
+        "vender"
+      ],
+      "avoid_tags": [
+        "publico"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ],
+      "_pista": "La URL parece truncada ('...direccion-y-administracion-de'). Abrirla y corregirla por la canónica."
+    },
+    {
+      "id": "um-contador",
+      "institution": "UM",
+      "title": "Contador Público",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://www.um.edu.uy/facultad-de-ciencias-empresariales-y-economia/oferta-academica/grado/contador-publico",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "C",
+        "E"
+      ],
+      "activity_tags": [
+        "cuentas",
+        "planillas",
+        "ordenar datos",
+        "numeros",
+        "finanzas"
+      ],
+      "avoid_tags": [
+        "numeros",
+        "oficina"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    },
+    {
+      "id": "um-abogacia",
+      "institution": "UM",
+      "title": "Abogacía",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://www.um.edu.uy/index%2Ephp/facultad-de-derecho/oferta-academica/grado/abogacia",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "E",
+        "S"
+      ],
+      "activity_tags": [
+        "argumentar",
+        "debatir",
+        "justicia",
+        "leer",
+        "defender a otros"
+      ],
+      "avoid_tags": [
+        "publico"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ],
+      "_pista": "Confirmar la URL canónica sin 'index%2Ephp/'."
+    },
+    {
+      "id": "um-magisterio",
+      "institution": "UM",
+      "title": "Magisterio",
+      "faculty": null,
+      "type": "degree",
+      "official_url": "https://www.um.edu.uy/facultad-de-humanidades-y-educacion/oferta-academica/grado/magisterio",
+      "checked_at": null,
+      "checked_by": null,
+      "summary_plain": "COMPLETAR A MANO leyendo la página oficial (máx. 60 palabras, sin cifras que no estén en facts)",
+      "areas": [
+        "S",
+        "A"
+      ],
+      "activity_tags": [
+        "ensenar",
+        "ninos",
+        "explicar",
+        "ayudar",
+        "crear actividades"
+      ],
+      "avoid_tags": [
+        "cuidar"
+      ],
+      "facts": [],
+      "unknowns": [
+        "duracion",
+        "modalidad",
+        "horario",
+        "costo",
+        "requisitos"
+      ]
+    }
+  ]
+}
