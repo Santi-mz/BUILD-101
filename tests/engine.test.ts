@@ -91,7 +91,7 @@ describe("planificador (sección 8)", () => {
   test("saludo, seguridad y cierre forzado", () => {
     expect(next(session()).type).toBe("GREETING");
     expect(next(session({ userTurns: 3, status: "SAFETY_STOP" })).type).toBe("SAFETY");
-    expect(next(session({ userTurns: 40 })).type).toBe("CLOSE");
+    expect(next(session({ userTurns: 20 })).type).toBe("CLOSE");
   });
   test("espera confirmación si hay un resumen pendiente", () => {
     expect(next(session({ userTurns: 2, pendingConfirmation: { level: 0, tries: 0 } })).type).toBe("WAIT_CONFIRMATION");
@@ -132,8 +132,8 @@ describe("planificador (sección 8)", () => {
     expect(next(s)).toMatchObject({ type: "GO_BACK", level: 2 });
     expect(next({ ...s, wentBack: ["N2.C"] }).type).not.toBe("GO_BACK");
   });
-  test("ofrece cerrar a los 30 turnos", () => {
-    const s = session({ userTurns: 30, currentLevel: 1, lastN4Turn: 30, qualityHistory: ["RICH"] });
+  test("ofrece cerrar al llegar al tope de turnos de la rúbrica", () => {
+    const s = session({ userTurns: 14, currentLevel: 1, lastN4Turn: 14, qualityHistory: ["RICH"] });
     expect(next(s).type).toBe("OFFER_CLOSE");
   });
 });
@@ -190,5 +190,23 @@ describe("datos personales", () => {
   test("no rompe texto común", () => {
     const t = "Me gusta la escuela de música y caminar a casa 10 minutos";
     expect(maskPII(t)).toBe(t);
+  });
+});
+
+describe("proveedores de IA", () => {
+  test("encadena Gemini y Claude según las claves; sin claves usa el modo demo", async () => {
+    const { providerChain } = await import("@/lib/llm/provider");
+    const saved = { ...process.env };
+    process.env.LLM_PROVIDER = "";
+    process.env.GEMINI_API_KEY = "";
+    process.env.keyvercel = "";
+    process.env.ANTHROPIC_API_KEY = "";
+    expect(providerChain()).toEqual([]);
+    process.env.GEMINI_API_KEY = " AIzaTest ";
+    process.env.ANTHROPIC_API_KEY = "sk-ant-test";
+    expect(providerChain()).toEqual(["gemini", "claude"]);
+    process.env.LLM_PROVIDER = "claude";
+    expect(providerChain()).toEqual(["claude", "gemini"]);
+    process.env = saved;
   });
 });

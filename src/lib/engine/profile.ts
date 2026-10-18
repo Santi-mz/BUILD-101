@@ -115,16 +115,17 @@ export function exitCriteriaMet(s: SessionState, lvl: number): boolean {
   const c = L.exitCriteria;
   if (!c) return false;
   const ev = evidenceOfLevel(s, lvl).filter((e) => weight(e) > 0);
+  // Tope de turnos por nivel (decisión de diseño P): la charla siempre avanza, aunque falte evidencia.
   const turnsCap = levelState(s, lvl).turns >= c.maxTurns;
   if (lvl === 0) {
     const ok = (c.requiredIndicators ?? []).every((id) => ev.some((e) => e.indicatorId === id)) && ev.length >= (c.minEvidence ?? 1);
-    return ok || (turnsCap && ev.length > 0);
+    return ok || turnsCap;
   }
   if (lvl === 1) {
     const n = c.minEvidencePerAxisPair ?? 2;
     const pair = (a: string, b: string) => ev.filter((e) => e.axis === a || e.axis === b);
     const ok = [pair("PERSONAS", "COSAS"), pair("DATOS", "IDEAS")].every((p) => p.length >= n && (!c.requiresConcrete || p.some((e) => e.concrete)));
-    return ok || (turnsCap && ev.length > 0);
+    return ok || turnsCap;
   }
   if (lvl === 2) {
     const scores = areaScores(active(s));
@@ -133,9 +134,9 @@ export function exitCriteriaMet(s: SessionState, lvl: number): boolean {
       const sup = ev.filter((e) => e.area === a && e.polarity === 1);
       return scores[a] > 0 && sup.length >= minPer && (!c.requiresConcrete || sup.some((e) => e.concrete));
     });
-    return strong.length >= (c.minAreasWithEvidence ?? 1) || (turnsCap && ev.length > 0);
+    return strong.length >= (c.minAreasWithEvidence ?? 1) || turnsCap;
   }
-  if (lvl === 3) return specifics(s).length >= (c.minSpecifics ?? 3) || (turnsCap && specifics(s).length > 0);
+  if (lvl === 3) return specifics(s).length >= (c.minSpecifics ?? 3) || turnsCap;
   return false;
 }
 

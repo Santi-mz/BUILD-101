@@ -75,11 +75,17 @@ export function next(s: SessionState): Action {
 
   if (ready) {
     const st = levelState(s, lvl).status;
+    // Sin nada que resumir (se llegó al tope de turnos sin evidencia): se avanza sin pedir confirmación.
+    if (st !== "CONFIRMED" && evidenceOfLevel(s, lvl).length === 0) {
+      const target = Math.min(lvl + 1, 3);
+      if (lvl === 3) return { type: "CLOSE", level: 3 };
+      return { type: "ADVANCE_LEVEL", level: target, indicatorId: nextIndicator(s, target), notes: "nivel sin evidencia" };
+    }
     if (st !== "CONFIRMED") return { type: "SUMMARIZE_LEVEL", level: lvl };
     if (lvl === 2 && isFlatProfile(active(s)) && !s.flatStrategyTried) return { type: "FLAT_PROFILE_STRATEGY", level: 2 };
     if (lvl === 3) {
       const extra = levelState(s, 3).turns - (levelOf(3).exitCriteria?.maxTurns ?? 8);
-      if (closeReady(s) || extra >= 3) return { type: "CLOSE", level: 3 };
+      if (closeReady(s) || extra >= 1) return { type: "CLOSE", level: 3 };
       return { type: "ASK_NEW", level: 4, indicatorId: missingN4(s) };
     }
     // Saltar niveles que ya estaban confirmados (por ejemplo, al volver atrás por una contradicción).

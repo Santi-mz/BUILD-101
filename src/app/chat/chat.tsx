@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { call, type View } from "@/components/api-client";
 import { speak, startDictation, stopSpeaking, toWav16k } from "@/lib/voice";
@@ -14,6 +15,7 @@ const AGE_OPTIONS = [
 ] as const;
 
 export default function Chat() {
+  const router = useRouter();
   const [view, setView] = useState<View | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -36,6 +38,14 @@ export default function Chat() {
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth" });
   }, [view?.messages.length, pending]);
+
+  // Al cerrar la charla se pasa directo a la devolución con los caminos.
+  const finished = view?.status === "COMPLETED";
+  useEffect(() => {
+    if (!finished) return;
+    const t = setTimeout(() => router.push("/resultado"), 2500);
+    return () => clearTimeout(t);
+  }, [finished, router]);
 
   const send = useCallback(async (message: string, close = false) => {
     setBusy(true);
@@ -214,6 +224,9 @@ export default function Chat() {
                 </button>
               )}
               {view.mode.llm === "mock" && <span className="ml-auto rounded-full border border-border px-2 py-0.5 text-xs text-muted">Modo demo sin IA</span>}
+              {view.mode.llm !== "mock" && view.mode.llmFailing && (
+                <span className="ml-auto rounded-full border border-amber-400 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-300">La IA no responde: abrí /api/llm-check para ver por qué; sigo con reglas</span>
+              )}
             </div>
           </div>
         )}

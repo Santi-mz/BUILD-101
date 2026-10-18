@@ -211,5 +211,7 @@ export type SessionState = {
   pathQuestions: { question: string; answer: string; at: string }[];
   mentorResult: MentorResult | null;
   nextStep: string | null;
+  /** Turnos seguidos en que Gemini no respondió y se usaron reglas (para avisar en la interfaz). */
+  llmFailures?: number;
   feedback: { usefulness: number; clarity: number; wouldUseAgain: boolean; comment?: string; at: string } | null;
 };

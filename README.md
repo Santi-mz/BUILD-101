@@ -31,6 +31,8 @@ Sin `GEMINI_API_KEY` la app usa el analizador por reglas y preguntas de plantill
 4. `npm run dev`
 5. Cargá noticias por primera vez: `curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/news`
 
+**¿La IA responde?** Abrí http://localhost:3000/api/llm-check: prueba cada clave configurada (Gemini y, si está, Claude) y dice en castellano qué falla. Si Gemini falla se usa Claude, y si fallan las dos, el analizador por reglas: la charla nunca se traba.
+
 **Pruebas:** `npm test` (63 pruebas: rúbrica, perfil, planificador, seguridad, guardas, datos personales, escenarios E1–E7 y criterios de aceptación del blueprint), `npx tsc --noEmit`, `npm run lint`.
 
 ## Deploy

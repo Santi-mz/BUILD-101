@@ -141,6 +141,7 @@ export async function runTurn(provider: LLMProvider, s: SessionState, rawText: s
   // 3–4. Analizador + bandera de riesgo del analizador.
   const { output, fallback } = await analyze(provider, s, text);
   if (fallback) logEvent("agent.fallback", { session: s.id, agent: "analyzer" });
+  s.llmFailures = fallback ? (s.llmFailures ?? 0) + 1 : 0;
   if (output.risk.flag) return safetyStop(s, msgId, output.risk.category ?? "MALESTAR_INTENSO");
 
   // 5. Perfil.

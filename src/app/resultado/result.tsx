@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { call, type View } from "@/components/api-client";
 import { Panel } from "@/app/chat/chat";
 import { RESOURCES, realLifeActions } from "@/lib/exploration";
@@ -170,6 +170,13 @@ function Paths({ view, busy, act }: { view: View; busy: string | null; act: Act 
   const router = useRouter();
   const [filters, setFilters] = useState<Filters>(view.filters as Filters);
   const rec = view.recommendation;
+  // Apenas termina la charla se buscan los caminos con las condiciones que contó (después se pueden cambiar).
+  const auto = useRef(false);
+  useEffect(() => {
+    if (rec || auto.current) return;
+    auto.current = true;
+    act("research", "/api/session/routes", { action: "research", filters: view.filters });
+  }, [rec, act, view.filters]);
   const selected = view.selectedPath;
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setFilters((f) => ({ ...f, [k]: v }));
 

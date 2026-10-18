@@ -7,7 +7,7 @@
       "name": "Punto de partida",
       "stage": "Arranque",
       "framework": "Gati (CDDQ)",
-      "exitCriteria": { "requiredIndicators": ["N0.ESTADO"], "minEvidence": 1, "requiresConfirmation": true, "maxTurns": 4 },
+      "exitCriteria": { "requiredIndicators": ["N0.ESTADO"], "minEvidence": 1, "requiresConfirmation": true, "maxTurns": 2 },
       "indicators": [
         {
           "id": "N0.ESTADO",
@@ -82,7 +82,7 @@
       "name": "Orientación general",
       "stage": "Lo general",
       "framework": "Prediger",
-      "exitCriteria": { "minEvidencePerAxisPair": 2, "requiresConcrete": true, "requiresConfirmation": true, "maxTurns": 5 },
+      "exitCriteria": { "minEvidencePerAxisPair": 2, "requiresConcrete": true, "requiresConfirmation": true, "maxTurns": 3 },
       "indicators": [
         {
           "id": "N1.PERSONAS",
@@ -145,7 +145,7 @@
       "name": "Perfil de intereses",
       "stage": "Tus intereses",
       "framework": "Holland (RIASEC)",
-      "exitCriteria": { "minAreasWithEvidence": 1, "minEvidencePerTopArea": 2, "requiresConcrete": true, "requiresConfirmation": true, "maxTurns": 8 },
+      "exitCriteria": { "minAreasWithEvidence": 1, "minEvidencePerTopArea": 2, "requiresConcrete": true, "requiresConfirmation": true, "maxTurns": 4 },
       "indicators": [
         {
           "id": "N2.R",
@@ -220,7 +220,7 @@
       "name": "Intereses específicos",
       "stage": "Lo concreto",
       "framework": "Intereses básicos, CCT",
-      "exitCriteria": { "minSpecifics": 3, "requiresConfirmation": true, "maxTurns": 8 },
+      "exitCriteria": { "minSpecifics": 3, "requiresConfirmation": true, "maxTurns": 4 },
       "indicators": [
         {
           "id": "N3.ACTIVIDAD",
@@ -368,6 +368,6 @@
     "confidence": { "mediumFrom": 10, "highFrom": 16 },
     "disclaimer": "Esto refleja lo que charlamos, no es un test. Puede cambiar si exploramos más."
   },
-  "planner": { "flatRatio": 1.5, "n4EveryTurns": 4, "maxBeliefExamsInRow": 2, "maxDeepenTries": 2, "minValuesToClose": 2, "minSpecificsToClose": 3 },
-  "limits": { "offerCloseAtUserTurns": 30, "forceCloseAtUserTurns": 40 }
+  "planner": { "flatRatio": 1.5, "n4EveryTurns": 4, "maxBeliefExamsInRow": 2, "maxDeepenTries": 2, "minValuesToClose": 1, "minSpecificsToClose": 2 },
+  "limits": { "offerCloseAtUserTurns": 14, "forceCloseAtUserTurns": 20 }
 }

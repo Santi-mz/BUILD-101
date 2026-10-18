@@ -180,3 +180,22 @@ describe("recorrido completo y criterios del MVP", () => {
     expect(stored).not.toMatch(/Sofía|098/);
   });
 });
+
+describe("la charla siempre llega a un cierre", () => {
+  test("si Gemini falla (clave inválida, cuota), sigue con reglas y cierra igual", async () => {
+    const { greet, newSession } = await import("@/lib/engine/turn");
+    const broken = { name: "gemini" as const, model: "x", json: async () => { throw new Error("401"); }, text: async () => { throw new Error("401"); } };
+    const s = newSession({ ageRange: "A18_21", guardianConsent: false, model: "x" });
+    await greet(broken, s);
+    for (let i = 0; i < 20 && s.status !== "COMPLETED"; i++) await runTurn(broken, s, i % 3 === 1 ? "sí" : "Me gusta producir música, una vez grabé un tema con amigos");
+    expect(s.status).toBe("COMPLETED");
+    expect(s.userTurns).toBeLessThanOrEqual(20);
+    expect(s.llmFailures).toBeGreaterThan(0);
+  });
+  test("aunque responda siempre 'no sé', cierra antes del tope", async () => {
+    const s = await start();
+    for (let i = 0; i < 25 && s.status !== "COMPLETED"; i++) await runTurn(provider, s, "no sé");
+    expect(s.status).toBe("COMPLETED");
+    expect(s.userTurns).toBeLessThanOrEqual(20);
+  });
+});

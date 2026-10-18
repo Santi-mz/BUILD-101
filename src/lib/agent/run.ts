@@ -11,7 +11,7 @@ export const MODELS = [...new Set([process.env.LLM_MODEL, "gemini-flash-latest",
 const MAX_STEPS = 12;
 
 // En Vercel la clave quedó cargada como "keyvercel"; se acepta ese nombre hasta renombrarla a GEMINI_API_KEY.
-export const genai = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? process.env.keyvercel });
+export const genai = () => new GoogleGenAI({ apiKey: (process.env.GEMINI_API_KEY ?? process.env.keyvercel)?.trim() });
 
 /** Corre `fn` con cada modelo de MODELS (dos intentos por modelo) hasta que uno responda. */
 export async function withRetry<T>(fn: (model: string) => Promise<T>): Promise<T> {

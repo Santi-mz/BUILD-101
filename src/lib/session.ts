@@ -71,7 +71,7 @@ export function publicView(s: SessionState) {
     nextStep: s.nextStep,
     tasks: s.tasks.slice(-8),
     feedbackSent: Boolean(s.feedback),
-    mode: { llm: providerName(), store: store().kind },
+    mode: { llm: providerName(), store: store().kind, llmFailing: (s.llmFailures ?? 0) > 0 },
     expiresAt: s.expiresAt,
     versions: { rubric: s.rubricVersion, prompts: s.promptVersion, model: s.model },
   };

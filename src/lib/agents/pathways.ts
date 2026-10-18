@@ -163,7 +163,7 @@ export async function askAboutPath(provider: LLMProvider, s: SessionState, r: Ro
     d.requisitos ? `Preparación: ${d.requisitos}` : null,
   ].filter(Boolean) as string[];
   let answer = "";
-  if (provider.name === "gemini") {
+  if (provider.name !== "mock") {
     try {
       answer = await provider.text({
         system:

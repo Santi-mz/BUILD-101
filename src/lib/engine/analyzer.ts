@@ -7,7 +7,7 @@ import { analyzerOutputSchema, type AnalyzerOutput, type SessionState } from "./
 
 /**
  * Analizador (LLM 1): convierte el último mensaje en evidencias de la rúbrica. Validación Zod,
- * 1 reintento y fallback (evidence vacío) si vuelve a fallar. En modo mock usa reglas deterministas.
+ * 1 reintento y, si vuelve a fallar, fallback al analizador por reglas. En modo mock usa solo las reglas.
  */
 export const EMPTY_OUTPUT: AnalyzerOutput = { evidence: [], contradictions: [], answerQuality: "BRIEF", risk: { flag: false } };
 
@@ -106,8 +106,9 @@ export async function analyze(provider: LLMProvider, s: SessionState, userText: 
       console.warn(JSON.stringify({ event: "analyzer.error", attempt, error: String(err).slice(0, 120) }));
     }
   }
-  // Fallback del contrato: sin evidencias, pero se conserva el prechequeo de riesgo.
-  return { output: { ...EMPTY_OUTPUT, risk: precheck(userText) }, fallback: true };
+  // Fallback: si Gemini no responde (clave inválida, cuota, red), se usa el analizador por reglas para que la
+  // charla no se trabe. Se marca como fallback para avisarlo en la interfaz.
+  return { output: mockAnalyze(s, userText), fallback: true };
 }
 
 /** Recorta campos largos antes de validar (el modelo a veces se pasa del límite). */
