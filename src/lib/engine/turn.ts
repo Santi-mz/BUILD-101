@@ -368,7 +368,8 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
   }
 
   s.qualityHistory = [...s.qualityHistory, quality].slice(-6);
-  s.stall = noInfo ? s.stall + 1 : 0;
+  // "No entiendo" no suma ni resetea: es un pedido de reformular, no una respuesta.
+  if (intent !== "CONFUSED") s.stall = noInfo ? s.stall + 1 : 0;
   logEvent("profile.updated", { session: s.id, evidence: s.evidence.length, level: s.currentLevel });
 
   // 6. Planificador v2 (puro).

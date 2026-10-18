@@ -93,7 +93,7 @@ export function miniSummaryText(s: SessionState) {
   // La cita: mejor algo que escribió con sus palabras (y concreto) que el texto de un botón.
   const fromOption = (e: { rationale: string }) => e.rationale.startsWith("Opción elegida");
   const support = active(s)
-    .filter((e) => e.polarity === 1 && e.indicatorId !== "N3.RECHAZO" && (e.area === areas[0] || e.indicatorId.startsWith("N3.")))
+    .filter((e) => e.polarity === 1 && e.indicatorId !== "N3.RECHAZO" && e.area === areas[0])
     .sort((x, y) => Number(fromOption(x)) - Number(fromOption(y)) || Number(y.concrete) - Number(x.concrete))[0];
   const what = areas.map((a) => AREA_PLAIN[a]).join(" y ");
   const cite = support ? `, por ejemplo cuando ${fromOption(support) ? "elegiste" : "dijiste"} "${shortQuote(support.quote)}"` : "";
