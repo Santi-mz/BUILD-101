@@ -69,7 +69,7 @@ describe("escenarios E1–E7 (Documento 2, sección 14)", () => {
     // nunca sobre el estado de decisión del nivel 0. El resumen ya usa la experiencia concreta que contó.
     expect(s.messages.some((m) => m.action?.type === "ASK_DEEPEN" && m.action.level === 0)).toBe(false);
     expect(s.messages.some((m) => m.action?.type === "SUMMARIZE_LEVEL" && /mural/.test(m.content))).toBe(true);
-    expect(s.currentLevel).toBe(1);
+    expect(s.currentLevel).toBeGreaterThanOrEqual(1);
     expect(questionCount(r[0].text)).toBe(1);
     assertTranscript(s);
   });

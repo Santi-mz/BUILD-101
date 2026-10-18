@@ -3,7 +3,7 @@ import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ANALYZER_SYSTEM } from "@/prompts/analyzer.v1";
 import { panelLabel } from "./profile";
 import { precheck } from "./safety";
-import { analyzerOutputSchema, type AnalyzerOutput, type SessionState } from "./types";
+import { analyzerOutputSchema, MAX_EVIDENCE_PER_TURN, type AnalyzerOutput, type SessionState } from "./types";
 
 /**
  * Analizador (LLM 1): convierte el último mensaje en evidencias de la rúbrica. Validación Zod,
@@ -113,14 +113,27 @@ export async function analyze(provider: LLMProvider, s: SessionState, userText: 
   return { output: mockAnalyze(s, userText), fallback: true };
 }
 
-/** Recorta campos largos antes de validar (el modelo a veces se pasa del límite). */
+/** Clave de una evidencia para sacar duplicados (mismo indicador, área, eje y valor). */
+const evidenceKey = (e: { indicatorId?: unknown; area?: unknown; axis?: unknown; value?: unknown }) =>
+  `${e.indicatorId}|${e.area ?? ""}|${e.axis ?? ""}|${String(e.value ?? "").toLowerCase()}`;
+
+/**
+ * Recorta campos largos antes de validar (el modelo a veces se pasa del límite). Los duplicados se sacan
+ * ANTES del tope por mensaje: si no, una respuesta rica con repetidos perdía evidencias distintas.
+ */
 function clean(raw: Record<string, unknown> | null) {
   if (!raw || typeof raw !== "object") return raw;
-  const ev = Array.isArray(raw.evidence) ? raw.evidence : [];
+  const seen = new Set<string>();
+  const ev = (Array.isArray(raw.evidence) ? raw.evidence : []).filter((e: Record<string, unknown>) => {
+    const k = evidenceKey(e);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   return {
     ...raw,
     contradictions: Array.isArray(raw.contradictions) ? raw.contradictions : [],
-    evidence: ev.slice(0, 8).map((e: Record<string, unknown>) => ({
+    evidence: ev.slice(0, MAX_EVIDENCE_PER_TURN).map((e: Record<string, unknown>) => ({
       ...e,
       quote: String(e.quote ?? "").slice(0, 400),
       rationale: String(e.rationale ?? "").slice(0, 300),
@@ -139,12 +152,13 @@ const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,
 const AREA_RULES: Record<Area, RegExp> = {
   R: /\b(arregl|armar|constru|cocin|deporte|futbol|entren|campo|taller|herramient|mecanic|carpinter|jardin|plant(e|o|ar)|animales|caball|bici|reparar|repare|soldar)/,
   I: /\b(investig|configur|programe|programar|entender como|como funciona|por que pasa|curiosidad|experiment|ciencia|astronom|problemas? dificil|averigu|analiz|descubr|estudi(e|o) por mi cuenta|me puse a buscar|calcul)/,
-  A: /\b(dibuj|music|audio|sonido|beats?|toco (la|el)|tocar (la|el)|compon|produzco|produje|producir|escrib|video|edit|disen|pint|foto|teatro|cante|canto|bail|crear|cree algo|invente)/,
+  A: /\b(dibuj|music|audio|sonido|beats?|toco (la|el)|tocar (la|el)|compon|produzco|produje|producir|escrib|(hago|grabo|filmo|armo|grabar|filmar|hacer) videos?|edit|disen|pint|foto|teatro|cante|canto|bail|crear|cree algo|invente)/,
   S: /\b(ayud|ensen|explic|cuid|voluntari|acompan|escuch(o|ar|e) a|consejo|mis amigos me cuentan|me buscan para)/,
   E: /\b(organic|organiz(e|o|ar) (un|una|el|la|eventos?|salida|fiesta|torneo|rifa)|lider|vend|negoci|convenc|emprend|evento|a cargo|delegad|capitan|presente frente)/,
   C: /\b(orden(o|ar|e|ado)|planilla|excel|listas?|cuentas|registr|calendario|archiv|clasific|inventario|presupuesto|organizo mis)/,
 };
-const CONCRETE = /\b(una vez|el otro dia|el ano pasado|la semana pasada|el verano|cuando (tenia|estaba|fui|hice)|hice|arme|organice|ayude|toque|fui|estuve|me quede|aprendi|tuve que|construi|cocine|dibuje|escribi|edite|vendi|explique|cuide|configure|arregle|produje|investigue|lidere|presente|participe)\b/;
+// Un hábito ("todos los viernes", "cada finde") también es concreto: ya dice qué hace y cuándo.
+const CONCRETE = /\b(una vez|todos los (dias|lunes|martes|miercoles|jueves|viernes|sabados|domingos|findes|fines de semana|veranos)|cada (semana|finde|fin de semana|verano)|el otro dia|el ano pasado|la semana pasada|el verano|cuando (tenia|estaba|fui|hice)|hice|arme|organice|ayude|toque|fui|estuve|me quede|aprendi|tuve que|construi|cocine|dibuje|escribi|edite|vendi|explique|cuide|configure|arregle|produje|investigue|lidere|presente|participe)\b/;
 const NEG_CLAUSE = /\b(no me gusta|no me gustaba|odio|me aburre|me aburria|detesto|evito|no soporto|no me interesa|nada que ver con)\b/;
 
 const AXIS_FROM_AREA: Record<Area, ("PERSONAS" | "COSAS" | "DATOS" | "IDEAS")[]> = {
@@ -174,6 +188,18 @@ const BARRIER_RULES: [RegExp, string][] = [
   [/\b(trabajo de dia|trabajo todo el dia|tengo que trabajar|cuido a mis hermanos)/, "tiene poco tiempo disponible"],
 ];
 
+/** Tramos negados de una cláusula normalizada: desde la negación hasta la próxima coma, "y"/"e" o el final. */
+function negationSpans(c: string): [number, number][] {
+  const spans: [number, number][] = [];
+  const re = new RegExp(NEG_CLAUSE.source, "g");
+  for (let m = re.exec(c); m; m = re.exec(c)) {
+    const rest = c.slice(m.index + m[0].length);
+    const end = rest.search(/,|\s(y|e)\s/);
+    spans.push([m.index, end === -1 ? c.length : m.index + m[0].length + end]);
+  }
+  return spans;
+}
+
 function clauses(text: string) {
   return text.split(/(?<=[.;!?])\s+|,\s*(?:pero|aunque)\s+|\s+pero\s+/i).map((c) => c.trim()).filter(Boolean);
 }
@@ -182,8 +208,13 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
   const out: AnalyzerOutput = { evidence: [], contradictions: [], answerQuality: "RICH", risk: precheck(userText) };
   const t = norm(userText);
   const words = userText.trim().split(/\s+/).filter(Boolean).length;
-  const push = (e: Omit<AnalyzerOutput["evidence"][number], "rationale"> & { rationale?: string }) =>
-    out.evidence.length < 8 && out.evidence.push({ rationale: e.rationale ?? "Regla del modo demo (mock)", ...e });
+  const seen = new Set<string>();
+  const push = (e: Omit<AnalyzerOutput["evidence"][number], "rationale"> & { rationale?: string }) => {
+    const k = evidenceKey(e);
+    if (seen.has(k) || out.evidence.length >= MAX_EVIDENCE_PER_TURN) return;
+    seen.add(k);
+    out.evidence.push({ rationale: e.rationale ?? "Regla del modo demo (mock)", ...e });
+  };
 
   // Confirmación de un resumen pendiente.
   if (s.pendingConfirmation) {
@@ -197,16 +228,25 @@ export function mockAnalyze(s: SessionState, userText: string): AnalyzerOutput {
   for (const clause of clauses(userText)) {
     const c = norm(clause);
     const neg = NEG_CLAUSE.test(c);
-    const concrete = !neg && CONCRETE.test(c);
     const quote = clause.slice(0, 200);
     const areas = (Object.keys(AREA_RULES) as Area[]).filter((a) => AREA_RULES[a].test(c));
+    // La negación alcanza solo hasta la próxima coma o "y": "odio las planillas y me encanta construir" no niega construir.
+    const spans = negationSpans(c);
+    const negated = (a: Area) => {
+      const at = c.search(AREA_RULES[a]);
+      return spans.some(([from, to]) => at >= from && at < to);
+    };
+    const positives = areas.filter((a) => !negated(a));
+    const concrete = positives.length > 0 && CONCRETE.test(c);
     for (const area of areas) {
-      push({ indicatorId: `N2.${area}`, area, polarity: neg ? -1 : 1, kind: "DECLARED", concrete, quote });
-      for (const axis of AXIS_FROM_AREA[area] ?? []) push({ indicatorId: `N1.${axis}`, axis, polarity: neg ? -1 : 1, kind: "DECLARED", concrete, quote });
-      if (concrete && area === areas[0]) push({ indicatorId: "N3.ACTIVIDAD", area, polarity: 1, kind: "DECLARED", concrete: true, quote });
+      const pol = negated(area) ? -1 : 1;
+      push({ indicatorId: `N2.${area}`, area, polarity: pol, kind: "DECLARED", concrete: pol === 1 && concrete, quote });
+      for (const axis of AXIS_FROM_AREA[area] ?? []) push({ indicatorId: `N1.${axis}`, axis, polarity: pol, kind: "DECLARED", concrete: pol === 1 && concrete, quote });
+      if (concrete && area === positives[0]) push({ indicatorId: "N3.ACTIVIDAD", area, polarity: 1, kind: "DECLARED", concrete: true, quote });
     }
-    if (neg && areas.length) push({ indicatorId: "N3.RECHAZO", area: areas[0], polarity: 1, kind: "DECLARED", concrete: false, quote });
-    if (!areas.length && /\b(con (amigos|gente|personas|companeros)|en grupo)\b/.test(c)) push({ indicatorId: "N1.PERSONAS", axis: "PERSONAS", polarity: 1, kind: "DECLARED", concrete, quote });
+    const rejected = areas.find(negated);
+    if (rejected) push({ indicatorId: "N3.RECHAZO", area: rejected, polarity: 1, kind: "DECLARED", concrete: false, quote });
+    if (!areas.length && /\b(con (mis |los |unos )?(amigos|amigas|gente|personas|companeros)|en grupo)\b/.test(c)) push({ indicatorId: "N1.PERSONAS", axis: "PERSONAS", polarity: 1, kind: "DECLARED", concrete, quote });
     if (/\b(se me pasan las horas|pierdo la nocion|me quedo horas|horas y horas|me colgue)\b/.test(c))
       push({ indicatorId: "N3.FLOW", area: areas[0], polarity: 1, kind: "DECLARED", concrete: true, quote });
     const tema = c.match(/\b(miro videos de|leo sobre|busco sobre|me interesa(n)? (el|la|los|las)?)\s*([a-z ]{3,40})/);

@@ -118,8 +118,10 @@ export function exitCriteriaMet(s: SessionState, lvl: number): boolean {
   const turnsCap = levelState(s, lvl).turns >= c.maxTurns;
   if (lvl === 0) {
     const ok = (c.requiredIndicators ?? []).every((id) => ev.some((e) => e.indicatorId === id)) && ev.length >= (c.minEvidence ?? 1);
-    // Si la persona habla de intereses y nunca de su estado de decisión, el nivel 0 igual se cierra al tope de turnos.
-    return ok || (turnsCap && active(s).some((e) => weight(e) > 0));
+    // Si la persona ya habla de intereses, no se la retiene preguntando por su estado de decisión:
+    // el nivel 0 se cierra en cuanto aparece evidencia de otros niveles (o al tope de turnos con cualquier evidencia).
+    const talksInterests = active(s).some((e) => !e.indicatorId.startsWith("N0.") && weight(e) > 0);
+    return ok || talksInterests || (turnsCap && active(s).some((e) => weight(e) > 0));
   }
   if (lvl === 1) {
     const n = c.minEvidencePerAxisPair ?? 2;
@@ -156,8 +158,9 @@ export function applyAnalysis(s: SessionState, out: AnalyzerOutput, messageId: s
     resolveLevelConfirmation(s, s.pendingConfirmation.level, out.confirmation.result);
   } else if (s.pendingConfirmation) {
     s.pendingConfirmation.tries += 1;
-    // Si no respondió a la confirmación dos veces, se toma como parcial: solo lo dicho explícitamente.
-    if (s.pendingConfirmation.tries >= 2) resolveLevelConfirmation(s, s.pendingConfirmation.level, "PARTIAL");
+    // Si en vez de responder al resumen siguió contando cosas, o no respondió dos veces, se toma como parcial:
+    // se confirma solo lo dicho explícitamente y no se le vuelve a pedir que confirme.
+    if (s.pendingConfirmation.tries >= 2 || out.evidence.length > 0) resolveLevelConfirmation(s, s.pendingConfirmation.level, "PARTIAL");
   }
   const text = norm(userText);
   for (const ev of out.evidence) {

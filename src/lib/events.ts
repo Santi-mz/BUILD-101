@@ -5,6 +5,7 @@
 export type EventName =
   | "session.created"
   | "message.received"
+  | "intent.detected"
   | "safety.stop"
   | "profile.updated"
   | "profile.corrected"

@@ -2,6 +2,8 @@ import { z } from "zod";
 import { AREAS, AXES, type Area, type Axis } from "@/lib/rubric";
 
 // ---------- Salida del analizador (LLM 1), Documento 2 sección 7 ----------
+/** Evidencias máximas por mensaje (después de sacar duplicados): una respuesta rica puede traer muchos intereses. */
+export const MAX_EVIDENCE_PER_TURN = 12;
 export const analyzerEvidenceSchema = z.object({
   indicatorId: z.string(),
   area: z.enum(AREAS).optional(),
@@ -15,7 +17,7 @@ export const analyzerEvidenceSchema = z.object({
 });
 
 export const analyzerOutputSchema = z.object({
-  evidence: z.array(analyzerEvidenceSchema).max(8),
+  evidence: z.array(analyzerEvidenceSchema).max(MAX_EVIDENCE_PER_TURN),
   confirmation: z
     .object({
       target: z.enum(["LEVEL_SUMMARY", "HYPOTHESIS"]),
@@ -72,7 +74,16 @@ export type ActionType =
   | "OFFER_CLOSE"
   | "GREETING";
 
-export type Action = { type: ActionType; level: number; indicatorId?: string; notes?: string; /** Nivel al que se mueve la sesión (al saltar niveles ya confirmados). */ setLevel?: number };
+export type Action = {
+  type: ActionType;
+  level: number;
+  indicatorId?: string;
+  notes?: string;
+  /** Nivel al que se mueve la sesión (al saltar niveles ya confirmados). */
+  setLevel?: number;
+  /** Intención de la persona que el mensaje tiene que atender (pedir cerrar, reclamo, confusión, pedir recomendación). */
+  intent?: "CLOSE" | "ALREADY_SAID" | "CONFUSED" | "ASK_RECOMMENDATION";
+};
 
 export type Message = { id: string; role: "USER" | "ASSISTANT"; content: string; action?: Action; createdAt: string };
 

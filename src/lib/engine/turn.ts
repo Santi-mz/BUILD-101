@@ -6,8 +6,9 @@ import { INTERVIEWER_PROMPT_VERSION } from "@/prompts/interviewer.v1";
 import { analyze } from "./analyzer";
 import { write } from "./interviewer";
 import { maskPII } from "./pii";
-import { next } from "./planner";
-import { applyAnalysis, countTurnInLevel, markSummarized, newId, reopenLevel } from "./profile";
+import { detectIntent, MIN_TURNS_TO_CLOSE } from "./intents";
+import { next, withIntent } from "./planner";
+import { applyAnalysis, countTurnInLevel, markSummarized, newId, reopenLevel, resolveLevelConfirmation } from "./profile";
 import { precheck, SAFETY_FOLLOWUP, SAFETY_MESSAGE, wantsToResume } from "./safety";
 import type { Action, AgeRange, SessionState } from "./types";
 
@@ -143,15 +144,26 @@ export async function runTurn(provider: LLMProvider, s: SessionState, rawText: s
   if (fallback) logEvent("agent.fallback", { session: s.id, agent: "analyzer" });
   if (output.risk.flag) return safetyStop(s, msgId, output.risk.category ?? "MALESTAR_INTENSO");
 
-  // 5. Perfil.
+  // 5. Perfil. Una intención explícita ("quiero terminar", "ya te lo dije", "no entiendo") no es una respuesta
+  // breve: no cuenta para pedir ejemplos, y "no entiendo" tampoco cuenta como respuesta al resumen pendiente.
+  let intent = detectIntent(text);
+  if (intent) logEvent("intent.detected", { session: s.id, intent });
+  // Segundo "no entiendo" seguido sobre el mismo resumen: no se vuelve a explicar, se toma como parcial y se sigue.
+  if (intent === "CONFUSED" && s.pendingConfirmation && s.lastAction?.intent === "CONFUSED") {
+    resolveLevelConfirmation(s, s.pendingConfirmation.level, "PARTIAL");
+    intent = null;
+  }
   const hadPending = s.pendingConfirmation?.level;
-  applyAnalysis(s, output, msgId, text);
-  s.qualityHistory = [...s.qualityHistory, output.answerQuality].slice(-6);
+  const pendingTries = s.pendingConfirmation?.tries;
+  applyAnalysis(s, intent === "CONFUSED" ? { ...output, confirmation: undefined, evidence: [] } : output, msgId, text);
+  if (intent === "CONFUSED" && s.pendingConfirmation && pendingTries !== undefined) s.pendingConfirmation.tries = pendingTries;
+  s.qualityHistory = [...s.qualityHistory, intent ? "OFF_TOPIC" : output.answerQuality].slice(-6);
   logEvent("profile.updated", { session: s.id, evidence: s.evidence.length, level: s.currentLevel });
   if (hadPending !== undefined && !s.pendingConfirmation) logEvent("level.confirmed", { session: s.id, level: hadPending, result: output.confirmation?.result ?? "PARTIAL" });
 
   // 6. Planificador (o cierre pedido por la persona).
-  const a: Action = opts.forceClose ? { type: "CLOSE", level: s.currentLevel } : next(s);
+  const planned = next(s);
+  const a: Action = opts.forceClose ? { type: "CLOSE", level: s.currentLevel } : intent ? withIntent(s, planned, intent, MIN_TURNS_TO_CLOSE) : planned;
   commit(s, a);
   if (a.type === "CLOSE") {
     closeSession(s);

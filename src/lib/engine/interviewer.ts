@@ -1,6 +1,7 @@
 import { indicator, levelOf } from "@/lib/rubric";
 import { LLMUnavailable, type LLMProvider } from "@/lib/llm/provider";
 import { ACTION_GUIDE, INTERVIEWER_SYSTEM } from "@/prompts/interviewer.v1";
+import { INTENT_GUIDE } from "./intents";
 import { check, type GuardMode } from "./guards";
 import { evidenceOfLevel, panelLabel } from "./profile";
 import type { Action, Evidence, SessionState } from "./types";
@@ -30,10 +31,37 @@ export function summaryEvidence(s: SessionState, lvl: number): Evidence[] {
     .slice(0, 8);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Guarda de repetición: ninguna pregunta puede volver a hacerse igual (texto o pregunta final idénticos).
+// Los resúmenes y la confirmación tienen fórmulas fijas a propósito y no cuentan.
+// ---------------------------------------------------------------------------------------------
+const NO_REPEAT_CHECK = new Set<Action["type"]>(["SUMMARIZE_LEVEL", "WAIT_CONFIRMATION", "OFFER_CLOSE", "CLOSE", "SAFETY"]);
+const normQ = (t: string) =>
+  t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9ñ ]/g, " ").replace(/\s+/g, " ").trim();
+const questionPart = (t: string) => t.match(/¿[^?]*\?/g)?.at(-1) ?? t;
+
+/** El borrador repite una pregunta que el agente ya hizo en esta charla. */
+export function repeatsEarlier(s: SessionState, draft: string) {
+  const whole = normQ(draft);
+  const q = normQ(questionPart(draft));
+  return s.messages.some(
+    (m) => m.role === "ASSISTANT" && !NO_REPEAT_CHECK.has(m.action?.type ?? "ASK_NEW") && (normQ(m.content) === whole || normQ(questionPart(m.content)) === q),
+  );
+}
+
 function buildPrompt(s: SessionState, a: Action) {
   const ind = a.indicatorId ? indicator(a.indicatorId) : undefined;
   const recent = s.messages.slice(-6).map((m) => `${m.role === "USER" ? "Persona" : "Vos"}: ${m.content}`).join("\n");
   const confirmed = s.evidence.filter((e) => e.status === "CONFIRMED").map((e) => `- ${panelLabel(e)} ("${e.quote}")`);
+  // Lo que ya contó y falta confirmar: para no preguntarle algo que ya respondió.
+  const pending = s.evidence
+    .filter((e) => e.status === "PENDING" && e.polarity === 1)
+    .slice(-10)
+    .map((e) => `- ${panelLabel(e)} ("${e.quote.slice(0, 80)}")`);
+  const asked = s.messages
+    .filter((m) => m.role === "ASSISTANT" && !NO_REPEAT_CHECK.has(m.action?.type ?? "ASK_NEW"))
+    .slice(-8)
+    .map((m) => `- ${questionPart(m.content)}`);
   const summary =
     a.type === "SUMMARIZE_LEVEL"
       ? `\nEVIDENCIAS PARA RESUMIR (nivel ${a.level} · ${levelOf(a.level).name}). Las HIPÓTESIS van como pregunta:\n${summaryEvidence(s, a.level)
@@ -41,7 +69,7 @@ function buildPrompt(s: SessionState, a: Action) {
           .join("\n")}`
       : "";
   return `ACCIÓN: ${a.type}
-QUÉ HACER: ${ACTION_GUIDE[a.type] ?? ""}${a.notes ? `\nNOTA: ${a.notes}` : ""}
+QUÉ HACER: ${ACTION_GUIDE[a.type] ?? ""}${a.notes ? `\nNOTA: ${a.notes}` : ""}${a.intent ? `\nATENDÉ PRIMERO ESTO: ${INTENT_GUIDE[a.intent]}` : ""}
 ${ind ? `INDICADOR OBJETIVO: ${ind.id} · ${ind.label}: ${ind.plain}
 Evidencia válida: ${ind.validEvidence.join("; ")}
 Preguntas de ejemplo: ${ind.exampleQuestions.join(" | ")}${ind.tactGuidance ? `\nTacto: ${ind.tactGuidance}` : ""}
@@ -49,6 +77,12 @@ Prohibido inferir: ${ind.forbiddenInferences.join("; ")}` : ""}${summary}
 
 PERFIL CONFIRMADO
 ${confirmed.length ? confirmed.join("\n") : "(nada todavía)"}
+
+LO QUE YA CONTÓ (sin confirmar; no se lo vuelvas a preguntar)
+${pending.length ? pending.join("\n") : "(nada todavía)"}
+
+PREGUNTAS QUE YA HICISTE (no repitas ninguna, ni con otras palabras)
+${asked.length ? asked.join("\n") : "(ninguna)"}
 
 ÚLTIMOS MENSAJES
 ${recent || "(inicio de la charla)"}
@@ -65,6 +99,10 @@ export async function write(provider: LLMProvider, s: SessionState, a: Action): 
     try {
       const draft = (await provider.text({ system: INTERVIEWER_SYSTEM, prompt })).replace(/\*\*/g, "").trim();
       const g = check(draft, mode, said);
+      if (!NO_REPEAT_CHECK.has(a.type) && repeatsEarlier(s, draft)) {
+        g.ok = false;
+        g.reasons.push("repite una pregunta que ya hiciste; preguntá otra cosa");
+      }
       if (g.ok) return { text: draft, source: attempt ? "retry" : "llm" };
       prompt += `\n\nTu borrador anterior no pasó las validaciones: ${g.reasons.join("; ")}. Reescribilo corrigiendo eso.`;
     } catch (err) {
@@ -75,12 +113,30 @@ export async function write(provider: LLMProvider, s: SessionState, a: Action): 
   return { text: safeTemplate(s, a, mode, said), source: "template" };
 }
 
-/** Plantilla que también pasa por las guardas; si no, la primera pregunta de ejemplo del indicador. */
+/** Preguntas abiertas de reserva, para cuando todas las del indicador y del nivel ya se hicieron. */
+const SPARE_QUESTIONS = [
+  "¿Qué hiciste la última semana que te haya gustado de verdad?",
+  "Si mañana tuvieras el día libre para hacer lo que quieras, ¿en qué lo usarías?",
+  "¿Hay algo que hagas seguido aunque nadie te lo pida?",
+  "¿Qué es algo que te sale bien y te gusta hacer?",
+];
+
+/**
+ * Plantilla que pasa por las guardas y no repite preguntas: prueba las preguntas de ejemplo del indicador
+ * (rotando), después las de otros indicadores del nivel, y por último preguntas abiertas de reserva.
+ */
 function safeTemplate(s: SessionState, a: Action, mode: GuardMode, said: string) {
-  const t = template(s, a);
-  if (check(t, mode, said).ok) return t;
+  const ok = (t: string) => check(t, mode, said).ok && (NO_REPEAT_CHECK.has(a.type) || !repeatsEarlier(s, t));
+  const first = template(s, a);
+  if (ok(first)) return first;
   const ind = a.indicatorId ? indicator(a.indicatorId) : undefined;
-  return ind?.exampleQuestions[0] ?? "Contame un poco más, ¿qué te gustaría agregar?";
+  const rotate = <T,>(arr: T[]) => arr.map((_, i) => arr[(i + s.userTurns) % arr.length]);
+  const levelQs = levelOf(Math.min(a.level, 4)).indicators.filter((i) => i.id !== ind?.id).flatMap((i) => i.exampleQuestions);
+  for (const q of [...rotate(ind?.exampleQuestions ?? []), ...levelQs, ...SPARE_QUESTIONS]) {
+    // Un pedido de ejemplo repetido se transforma en una pregunta nueva.
+    for (const t of [template(s, a, q), template(s, { ...a, type: "ASK_NEW" }, q)]) if (ok(t)) return t;
+  }
+  return first;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -95,21 +151,48 @@ export function lastUserWords(s: SessionState) {
   return words.length > 12 ? `${words.slice(0, 12).join(" ")}…` : first;
 }
 
-export function template(s: SessionState, a: Action): string {
+/** Arranque del mensaje según la intención de la persona (va antes de la pregunta). */
+const INTENT_OPENERS: Record<NonNullable<Action["intent"]>, string> = {
+  CLOSE: "Ya casi: con una o dos respuestas más te puedo mostrar algo útil.",
+  ALREADY_SAID: "Tenés razón, ya me lo contaste. Vamos a otra cosa.",
+  CONFUSED: "Perdón, lo pregunto más fácil.",
+  ASK_RECOMMENDATION: "Al final te muestro caminos concretos para investigar, con fuentes. Para eso me falta conocerte un poco más.",
+};
+
+export function template(s: SessionState, a: Action, question?: string): string {
   const ind = a.indicatorId ? indicator(a.indicatorId) : undefined;
-  const q = ind ? pick(ind.exampleQuestions, s.userTurns) : "¿Qué te gustaría contarme ahora?";
-  const echo = lastUserWords(s);
+  const q = question ?? (ind ? pick(ind.exampleQuestions, s.userTurns) : "¿Qué te gustaría contarme ahora?");
+  const lastUser = [...s.messages].reverse().find((m) => m.role === "USER");
+  // El eco va sobre lo que se está profundizando: si es de un mensaje anterior, se cita ese, no el último.
+  const target = [...s.evidence].reverse().find((e) => e.indicatorId === a.indicatorId && e.status !== "REJECTED");
+  const echo = target && target.messageId !== lastUser?.id ? shortQuote(target.quote) : lastUserWords(s);
   const prevAssistant = [...s.messages].reverse().find((m) => m.role === "ASSISTANT");
-  const ack = pick(["Entiendo.", "Te sigo.", "Gracias por contarlo.", "Ok, anotado.", "Bien, sigamos."], s.userTurns);
+  const added = s.evidence.some((e) => e.messageId === lastUser?.id);
+  const greeted = /^(hola|buenas|hey|buen dia|que tal|holis)\W*$/i.test((lastUser?.content ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim());
+  // "Ok, anotado" solo si la respuesta sumó algo; a un saludo se le responde el saludo.
+  const ack = greeted ? "¡Hola!" : added ? pick(["Entiendo.", "Te sigo.", "Gracias por contarlo.", "Ok, anotado.", "Bien, sigamos."], s.userTurns) : "";
+  if (a.intent === "CONFUSED" && a.type === "WAIT_CONFIRMATION") {
+    const first = summaryEvidence(s, a.level)[0];
+    return first
+      ? `Perdón, me expliqué mal. Por lo que dijiste ("${shortQuote(first.quote)}"), anoté esto: ${panelLabel(first).toLowerCase()}. ¿Te describe bien, más o menos, o no?`
+      : "Perdón, me expliqué mal. Te pregunto si lo que anoté de vos hasta ahora va bien. ¿Es así, más o menos, o no?";
+  }
+  if (a.intent && a.type !== "SUMMARIZE_LEVEL" && a.type !== "ADVANCE_LEVEL") {
+    // Con "no entiendo" se usa otra pregunta del mismo indicador (la siguiente), no la misma.
+    const alt = a.intent === "CONFUSED" && ind && !question ? pick(ind.exampleQuestions, s.userTurns + 1) : q;
+    return `${INTENT_OPENERS[a.intent]} ${alt}`;
+  }
   switch (a.type) {
     case "GREETING":
       return `¡Hola! Soy una IA para explorar juntos qué te gusta y qué te importa. No es un test y no hace falta que tengas nada claro. ${q}`;
     case "ASK_DEEPEN":
       if (prevAssistant?.action?.type === "ASK_DEEPEN")
         return "Bajémoslo a algo puntual: ¿qué fue lo último que hiciste así? Contame qué parte te gustó más.";
-      return `${echo && echo.split(/\s+/).length >= 3 ? `Dijiste "${echo}". ` : ""}Para no quedarme con una idea general, ¿te acordás de una vez puntual en la que pasó eso? Contame qué hacías, con quién y qué parte disfrutaste más.`;
+      return `${echo && echo.split(/\s+/).length >= 2 ? `${target && target.messageId !== lastUser?.id ? "Antes dijiste" : "Dijiste"} "${echo}". ` : ""}Para no quedarme con una idea general, ¿te acordás de una vez puntual en la que pasó eso? Contame qué hacías, con quién y qué parte disfrutaste más.`;
     case "CHANGE_ANGLE":
-      return `Está bien, no hace falta tenerlo claro. Probemos por otro lado. ${q}`;
+      // "No hace falta tenerlo claro" solo tiene sentido si la respuesta fue evasiva ("no sé", "nada").
+      if (s.qualityHistory.at(-1) === "EVASIVE") return `Está bien, no hace falta tenerlo claro. Probemos por otro lado. ${q}`;
+      return `${greeted ? "¡Hola!" : pick(["Vamos por otro lado.", "Cambiemos un poco de tema.", "Te pregunto otra cosa."], s.userTurns)} ${q}`;
     case "WAIT_CONFIRMATION":
       return "Quiero asegurarme de no haberte entendido mal. Lo que resumí recién, ¿te representa o hay algo que cambiarías?";
     case "SUMMARIZE_LEVEL":
