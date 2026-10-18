@@ -92,7 +92,7 @@ export type Action = {
   /** Nivel al que se mueve la sesión (al saltar niveles ya confirmados). */
   setLevel?: number;
   /** Intención de la persona que el mensaje tiene que atender (pedir cerrar, reclamo, confusión, pedir recomendación). */
-  intent?: "CLOSE" | "ALREADY_SAID" | "CONFUSED" | "ASK_RECOMMENDATION";
+  intent?: "CLOSE" | "ALREADY_SAID" | "CONFUSED" | "ASK_RECOMMENDATION" | "SAD" | "ABOUT_BOT" | "PROGRESS";
   /** v2: casillero al que apunta la pregunta. */
   slot?: SlotId;
   /** v2: opciones en botones que acompañan la pregunta. */

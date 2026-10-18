@@ -178,7 +178,7 @@ export function nextV2(s: SessionState): Action {
   const extraAsked = s.extraAsked || afterOffer.some((m) => m.role === "ASSISTANT");
   if (offerAccepted && extraAsked) return { type: "CLOSE", level: lvl, reason: "offer_accepted" };
   if (offerAccepted) {
-    const slot = nextSlot(s);
+    const slot = nextSlot(s, prevAction?.slot ?? null) ?? nextSlot(s);
     return slot ? ask(s, "ASK_SLOT", slot) : { type: "CLOSE", level: lvl, reason: essentialsMet(s) ? "sufficient" : "stalled" };
   }
 
@@ -213,6 +213,7 @@ export function nextV2(s: SessionState): Action {
     return { type: "MINI_SUMMARY", level: 2 };
   }
 
-  const slot = nextSlot(s);
+  // No el mismo casillero dos veces seguidas si hay otro pendiente (se sentía repetitivo).
+  const slot = nextSlot(s, prevAction?.slot ?? null) ?? nextSlot(s);
   return slot ? ask(s, "ASK_SLOT", slot) : { type: "CLOSE", level: lvl, reason: essentialsMet(s) ? "sufficient" : "stalled" };
 }

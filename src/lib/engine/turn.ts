@@ -274,6 +274,8 @@ const NO_INFO_TEXT = /^(no se|nose|ni idea|depende|capaz|puede ser|que se yo|pas
 const SUMMARY_REJECT = /^(no|nop|nope)\b|\bno es asi\b|\bno me representa\b|^para nada|^nada que ver/;
 const SUMMARY_PARTIAL = /\b(mas o menos|masomenos|en parte|algo asi|mas bien no)\b/;
 const SUMMARY_CONFIRM = /^(si|sii+|exacto|tal cual|me representa|dale|obvio|claro|totalmente|correcto)\b/;
+/** Respuesta afirmativa a la oferta de cierre: quiere ver el perfil. */
+const OFFER_YES = /^(si|sii+|dale|ok|okey|okay|listo|bueno|ta|vamos|veamos|de una|obvio|claro|si,? (dale|veamos|vamos|mostrame)|ahora)\b(?!.*\b(mas|otra|seguir|seguimos)\b)/;
 export { ONE_MORE } from "./interviewer-v2";
 
 /** Respuesta al mini-resumen: confirma o descarta lo que se resumió (las evidencias de las áreas destacadas). */
@@ -334,7 +336,12 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
   } else if (prev?.type === "MINI_SUMMARY" && shortReply && resolveMiniSummary(s, text)) {
     // "Sí" / "Más o menos" / "No" al mini-resumen: no hace falta el analizador.
   } else if (prev?.type === "OFFER_CLOSE" && shortReply) {
-    // Cualquier respuesta corta que no pide el perfil es "una pregunta más".
+    // "¿Lo vemos ahora o preferís una pregunta más?" → "sí", "dale", "ok" es verlo; lo demás, una pregunta más.
+    if (OFFER_YES.test(norm(text))) {
+      s.closeRequested = true;
+      const out = closeWith(s, "user");
+      return { reply: out.content, action: out.action, safety: false };
+    }
     s.offerAccepted = true;
   } else {
     // Texto libre: analizador (con el presupuesto del turno). Si falla, ya cae al analizador por reglas.
@@ -349,8 +356,9 @@ async function runTurnV2(provider: LLMProvider, s: SessionState, text: string, m
     // son respuestas sin información (stall), no fallos del LLM. Solo cuenta como fallo un texto con contenido
     // que ni el LLM ni las reglas pudieron leer. (En producción, con la cuota de Gemini agotada, cada "no sé"
     // contaba como fallo y a la segunda se ofrecía cerrar diciendo "con lo que me contaste…".)
-    const plainNoInfo = Boolean(intent) || NO_INFO_TEXT.test(norm(text));
-    if (fallback && !added && !plainNoInfo) {
+    // "Estoy triste" puede venir con información ("…pero me gusta dibujar"): no se la fuerza a "sin información".
+    const plainNoInfo = Boolean(intent && intent !== "SAD") || NO_INFO_TEXT.test(norm(text));
+    if (fallback && !added && !plainNoInfo && !intent) {
       s.llmFailures += 1;
       logEvent("agent.fallback", { session: s.id, agent: "analyzer" });
     } else if (!fallback) s.llmFailures = 0;

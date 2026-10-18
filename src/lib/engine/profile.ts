@@ -321,9 +321,11 @@ function feedbackV2(s: SessionState) {
   const best = (list: Evidence[]) => [...list].sort((x, y) => Number(byOption(x)) - Number(byOption(y)) || Number(y.concrete) - Number(x.concrete))[0];
   const observed: { text: string; evidenceIds: string[]; quote: string }[] = [];
   const areas = topAreas(act);
-  const fallbackAreas = areas.length ? areas : AREAS.filter((a) => act.some((e) => e.area === a && e.polarity === 1)).slice(0, 2);
+  // Un rechazo (N3.RECHAZO, "estar sentado en una oficina") tiene área pero NO es un interés: nunca sostiene lo observado.
+  const likes = (e: Evidence) => e.polarity === 1 && e.indicatorId !== "N3.RECHAZO";
+  const fallbackAreas = areas.length ? areas : AREAS.filter((a) => act.some((e) => e.area === a && likes(e))).slice(0, 2);
   for (const a of fallbackAreas) {
-    const support = act.filter((e) => e.area === a && e.polarity === 1);
+    const support = act.filter((e) => e.area === a && likes(e));
     if (!support.length) continue;
     const text = areas.length ? OBSERVED_AREA[a] : `${OBSERVED_AREA[a].replace("Te tira", "Apareció algo de")} (con poca información todavía)`;
     observed.push({ text, evidenceIds: support.map((e) => e.id), quote: best(support).quote });

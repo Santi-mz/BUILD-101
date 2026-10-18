@@ -66,6 +66,9 @@ const INTENT_OPENERS: Record<NonNullable<Action["intent"]>, string> = {
   ALREADY_SAID: "Tenés razón, ya me lo contaste.",
   CONFUSED: "Perdón, lo pregunto más fácil.",
   ASK_RECOMMENDATION: "Al final te muestro caminos concretos para investigar; para eso necesito conocerte un poco más.",
+  SAD: "Lamento que estés así. Si es más que lo de estudiar, hablarlo con alguien de confianza ayuda (Línea Vida: 0800 0767, 24 h). Vamos de a poco.",
+  ABOUT_BOT: "Sí, soy una IA: te hago pocas preguntas para ayudarte a pensar qué te gusta, pero no decido por vos.",
+  PROGRESS: "Son 8 preguntas como mucho, y podés ver tu perfil cuando quieras.",
 };
 const AREA_PLAIN: Record<Area, string> = {
   R: "hacer cosas con las manos o el cuerpo",
@@ -90,7 +93,7 @@ export function miniSummaryText(s: SessionState) {
   // La cita: mejor algo que escribió con sus palabras (y concreto) que el texto de un botón.
   const fromOption = (e: { rationale: string }) => e.rationale.startsWith("Opción elegida");
   const support = active(s)
-    .filter((e) => e.polarity === 1 && (e.area === areas[0] || e.indicatorId.startsWith("N3.")))
+    .filter((e) => e.polarity === 1 && e.indicatorId !== "N3.RECHAZO" && (e.area === areas[0] || e.indicatorId.startsWith("N3.")))
     .sort((x, y) => Number(fromOption(x)) - Number(fromOption(y)) || Number(y.concrete) - Number(x.concrete))[0];
   const what = areas.map((a) => AREA_PLAIN[a]).join(" y ");
   const cite = support ? `, por ejemplo cuando ${fromOption(support) ? "elegiste" : "dijiste"} "${shortQuote(support.quote)}"` : "";
@@ -101,7 +104,14 @@ export function templateV2(s: SessionState, a: Action): string {
   const slot = a.slot;
   const user = lastUser(s);
   const added = Boolean(user && s.evidence.some((e) => e.messageId === user.id));
-  const opener = a.intent ? INTENT_OPENERS[a.intent] : "";
+  // Reconocer lo que pesa (miedo a equivocarse, lo que esperan en casa) antes de seguir preguntando.
+  const said = user ? s.evidence.filter((e) => e.messageId === user.id && e.status !== "REJECTED") : [];
+  const empathy = said.some((e) => e.indicatorId === "N0.CREENCIAS")
+    ? "Es re común tener ese miedo, y elegir algo no es para siempre."
+    : said.some((e) => e.indicatorId === "N0.CONF_EXT" || e.indicatorId === "N4.INFLUENCIA")
+      ? "Tiene sentido que pese lo que esperan en tu casa; acá importa lo que te pasa a vos."
+      : "";
+  const opener = [a.intent ? INTENT_OPENERS[a.intent] : "", empathy].filter(Boolean).join(" ");
   switch (a.type) {
     case "GREETING":
       return "¡Hola! Soy una IA para explorar qué te gusta y qué te importa. No es un test: son pocas preguntas y no hace falta tener nada claro. ¿Cómo estás hoy con esto de elegir qué hacer después?";
@@ -112,7 +122,7 @@ export function templateV2(s: SessionState, a: Action): string {
     case "ASK_DEEPEN": {
       const target = [...s.evidence].reverse().find((e) => e.indicatorId === a.indicatorId && e.status !== "REJECTED");
       const echo = target ? shortQuote(target.quote) : "";
-      return `${echo ? `Dijiste "${echo}". ` : ""}¿Me contás la última vez que lo hiciste y qué parte te gustó más?`;
+      return `${opener ? opener + " " : ""}${echo ? `Dijiste "${echo}". ` : ""}¿Me contás la última vez que lo hiciste y qué parte te gustó más?`;
     }
     case "MINI_SUMMARY":
       return miniSummaryText(s);

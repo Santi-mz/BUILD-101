@@ -161,6 +161,9 @@ const INTENT_OPENERS: Record<NonNullable<Action["intent"]>, string> = {
   ALREADY_SAID: "Tenés razón, ya me lo contaste. Vamos a otra cosa.",
   CONFUSED: "Perdón, lo pregunto más fácil.",
   ASK_RECOMMENDATION: "Al final te muestro caminos concretos para investigar, con fuentes. Para eso me falta conocerte un poco más.",
+  SAD: "Lamento que estés así. Si es más que lo de estudiar, hablarlo con alguien de confianza ayuda (Línea Vida: 0800 0767, 24 h).",
+  ABOUT_BOT: "Sí, soy una IA: te hago algunas preguntas para ayudarte a pensar qué te gusta, pero no decido por vos.",
+  PROGRESS: "Son pocas preguntas, y podés ver tu perfil cuando quieras.",
 };
 
 export function template(s: SessionState, a: Action, question?: string): string {
