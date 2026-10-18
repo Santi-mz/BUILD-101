@@ -93,6 +93,8 @@ export default function Result() {
         )}
       </section>
 
+      {v2 && <RiasecCode p={p} done={done} />}
+
       {v2 && (
         <section className="rounded-2xl border border-border bg-card p-6">
           <h2 className="font-semibold">Lo que observé</h2>
@@ -537,5 +539,73 @@ function Select({ label, value, onChange, options }: { label: string; value: str
         ))}
       </select>
     </label>
+  );
+}
+
+/** Qué significa cada letra, en lenguaje llano (intereses, no etiquetas de personalidad). */
+const RIASEC_MEANING: Record<Area, string> = {
+  R: "Te interesan las actividades prácticas: hacer, armar o arreglar cosas con las manos, herramientas o el cuerpo.",
+  I: "Te interesa entender cómo funcionan las cosas: investigar, analizar y resolver problemas.",
+  A: "Te interesa crear y expresarte: diseñar, dibujar, escribir, la música o lo audiovisual.",
+  S: "Te interesa ayudar, enseñar o acompañar a otras personas.",
+  E: "Te interesa organizar, convencer y llevar adelante proyectos con otras personas.",
+  C: "Te interesan las tareas ordenadas: datos, registros y procesos claros.",
+};
+
+/**
+ * Código RIASEC (modelo de Holland) de la devolución v2, con el diseño del perfil anterior: hasta tres letras de mayor
+ * a menor según lo que contaste, sin porcentajes. Con poca información lo dice, para no presentarlo como definitivo.
+ */
+function RiasecCode({ p, done }: { p: View["profile"]; done: boolean }) {
+  const code = AREAS.filter((k) => p.riasec[k].score > 0)
+    .sort((a, b) => p.riasec[b].score - p.riasec[a].score)
+    .slice(0, 3);
+  if (!code.length) return null;
+  const badge = !done ? "En construcción" : p.provisional ? "Perfil provisional" : "Perfil completo";
+  const solid = done && !p.provisional;
+  return (
+    <section className="relative isolate overflow-hidden rounded-3xl border border-border bg-card">
+      <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full bg-accent-soft opacity-70 blur-3xl" />
+      <div className="p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className={`rounded-full px-2.5 py-1 font-medium ${solid ? "bg-accent text-background" : "bg-accent-soft text-accent"}`}>{badge}</span>
+          <span className="text-muted">Modelo RIASEC de Holland</span>
+        </div>
+        <div className="mt-6 grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted">Tu código RIASEC</h2>
+            <p className="mt-2 font-mono text-6xl font-semibold leading-none tracking-tight text-accent sm:text-7xl">
+              <span aria-hidden>{code.join("")}</span>
+              <span className="sr-only">{code.map((k) => p.riasec[k].label).join(", ")}</span>
+            </p>
+          </div>
+          <div>
+            <ol className="space-y-2">
+              {code.map((k, i) => (
+                <li key={k} className="flex items-center gap-3">
+                  <span
+                    aria-hidden
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono font-semibold ${i === 0 ? "bg-accent text-background" : "bg-accent-soft text-accent"}`}
+                  >
+                    {k}
+                  </span>
+                  <span className="text-sm">
+                    <span className="font-medium">{p.riasec[k].label}</span>
+                    <span className="text-muted"> · {i === 0 ? "tu interés principal" : `${i + 1}.º interés`}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-3 text-xs text-muted">
+              {code.length > 1 ? `Las ${code.length === 2 ? "dos" : "tres"} letras son tus intereses más fuertes, de mayor a menor.` : "Es el interés que más apareció en lo que contaste."}
+            </p>
+          </div>
+        </div>
+        <p className="mt-6 max-w-2xl border-t border-border pt-6 text-lg leading-relaxed">{RIASEC_MEANING[code[0]]}</p>
+        {!p.show && (
+          <p className="mt-3 text-sm text-muted">Charlamos poco, así que esto puede cambiar: si seguís contando cosas, el código se vuelve más confiable.</p>
+        )}
+      </div>
+    </section>
   );
 }
