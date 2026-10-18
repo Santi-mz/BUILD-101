@@ -114,6 +114,13 @@ describe("planificador (sección 8)", () => {
     const u = session({ userTurns: 3, currentLevel: 1, lastIndicator: "N1.PERSONAS", sameIndicatorTries: 2, qualityHistory: ["BRIEF"] });
     expect(next(u).type).toBe("CHANGE_ANGLE");
   });
+  test("respuesta breve sobre el estado de decisión (N0): no pide «una vez puntual»", () => {
+    const s = session({ userTurns: 1, lastIndicator: "N0.ESTADO", qualityHistory: ["BRIEF"] });
+    expect(next(s).type).toBe("CHANGE_ANGLE");
+    expect(next(s).indicatorId).not.toBe("N0.ESTADO");
+    const t = session({ userTurns: 2, currentLevel: 1, lastIndicator: "N4.VALOR", qualityHistory: ["BRIEF"], evidence: [ev({ indicatorId: "N4.VALOR", area: undefined, value: "autonomia", concrete: false })] });
+    expect(next(t).type).not.toBe("ASK_DEEPEN");
+  });
   test("perfil plano en nivel 2 confirmado → estrategia de perfil plano una vez", () => {
     const evidence = ["A", "S", "I", "R"].flatMap((a) => [ev({ area: a as Evidence["area"], indicatorId: `N2.${a}` }), ev({ area: a as Evidence["area"], indicatorId: `N2.${a}` })]);
     const s = session({ userTurns: 8, currentLevel: 2, evidence });

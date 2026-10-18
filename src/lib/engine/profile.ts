@@ -118,7 +118,8 @@ export function exitCriteriaMet(s: SessionState, lvl: number): boolean {
   const turnsCap = levelState(s, lvl).turns >= c.maxTurns;
   if (lvl === 0) {
     const ok = (c.requiredIndicators ?? []).every((id) => ev.some((e) => e.indicatorId === id)) && ev.length >= (c.minEvidence ?? 1);
-    return ok || (turnsCap && ev.length > 0);
+    // Si la persona habla de intereses y nunca de su estado de decisión, el nivel 0 igual se cierra al tope de turnos.
+    return ok || (turnsCap && active(s).some((e) => weight(e) > 0));
   }
   if (lvl === 1) {
     const n = c.minEvidencePerAxisPair ?? 2;

@@ -43,7 +43,7 @@ function singleUnconcrete(s: SessionState, lvl: number) {
   const byInd = new Map<string, typeof ev>();
   for (const e of ev) byInd.set(e.indicatorId + (e.area ?? ""), [...(byInd.get(e.indicatorId + (e.area ?? "")) ?? []), e]);
   for (const list of byInd.values()) {
-    if (list.length !== 1 || list[0].concrete) continue;
+    if (list.length !== 1 || list[0].concrete || !deepenable(list[0].indicatorId)) continue;
     const id = list[0].indicatorId;
     const deepened = s.messages.some((m) => m.action?.type === "ASK_DEEPEN" && m.action.indicatorId === id);
     if (!deepened) return id;
@@ -94,6 +94,14 @@ export function next(s: SessionState): Action {
   if (last === "EVASIVE" && q[q.length - 2] === "EVASIVE") {
     return { type: "CHANGE_ANGLE", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator), notes: "no insistir" };
   }
+  // En el estado de decisión (N0) y en lo que le importa (N4) una respuesta corta puede ser completa
+  // ("todo abierto"): pedir "una vez puntual" ahí no tiene sentido. Si dejó evidencia se sigue; si no, otro ángulo.
+  if ((last === "BRIEF" || last === "EVASIVE") && s.lastIndicator && !deepenable(s.lastIndicator)) {
+    const lastUser = [...s.messages].reverse().find((m) => m.role === "USER")?.id;
+    const gotSomething = active(s).some((e) => e.messageId === lastUser);
+    if (last === "EVASIVE" || !gotSomething) return { type: "CHANGE_ANGLE", level: lvl, indicatorId: nextIndicator(s, lvl, s.lastIndicator), notes: "no insistir" };
+    return afterAnswer(s, lvl);
+  }
   if ((last === "BRIEF" || last === "EVASIVE") && s.lastIndicator && s.sameIndicatorTries < P.maxDeepenTries) {
     return { type: "ASK_DEEPEN", level: lvl, indicatorId: s.lastIndicator, notes: "pedir un ejemplo concreto" };
   }
@@ -103,7 +111,14 @@ export function next(s: SessionState): Action {
 
   const single = singleUnconcrete(s, lvl);
   if (single) return { type: "ASK_DEEPEN", level: lvl, indicatorId: single, notes: "pedir un ejemplo concreto" };
+  return afterAnswer(s, lvl);
+}
 
+/** Pedir un episodio concreto solo tiene sentido para intereses y actividades (niveles 1 a 3). */
+const deepenable = (id: string) => /^N[123]\./.test(id);
+
+/** Siguiente pregunta cuando la respuesta alcanzó: cada tanto lo que le importa (N4), si no el indicador menos cubierto. */
+function afterAnswer(s: SessionState, lvl: number): Action {
   if (lvl >= 1 && s.userTurns - s.lastN4Turn >= P.n4EveryTurns) {
     return { type: "ASK_NEW", level: 4, indicatorId: nextIndicator(s, 4, s.lastIndicator) };
   }
