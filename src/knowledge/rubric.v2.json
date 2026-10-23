@@ -735,13 +735,13 @@
   "limits": {
     "offerCloseAtUserTurns": 30,
     "forceCloseAtUserTurns": 40,
-    "maxQuestions": 8,
+    "maxQuestions": 3,
     "targetQuestions": [
-      5,
-      7
+      2,
+      3
     ],
     "offerCloseFrom": 4,
-    "closeWhenSufficientFrom": 5,
+    "closeWhenSufficientFrom": 2,
     "stallToClose": 2,
     "maxDeepenPerIndicator": 1,
     "maxMiniSummaries": 1,

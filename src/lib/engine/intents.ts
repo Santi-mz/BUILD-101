@@ -1,3 +1,5 @@
+import { rubric } from "@/lib/rubric";
+
 /**
  * Intenciones de la persona que no son respuestas a la pregunta: pedir terminar, reclamar que ya lo dijo,
  * no entender, o pedir una recomendación. Deterministas (funcionan igual con Gemini o con reglas)
@@ -46,5 +48,5 @@ export const INTENT_GUIDE: Record<Intent, string> = {
     "La persona pidió que le recomiendes qué estudiar. Explicale en una frase que al final de la charla le mostrás caminos concretos para investigar, con fuentes, y que para eso te falta conocerla un poco más. No nombres carreras. Después hacé la pregunta.",
   SAD: "La persona dijo que está triste o mal. Validalo con calidez en una frase, sin diagnosticar ni minimizar; decile que si es más que lo de estudiar, hablarlo con alguien de confianza ayuda (Línea Vida 0800 0767, 24 horas). Después, con suavidad, la pregunta.",
   ABOUT_BOT: "La persona preguntó si sos un bot. Decile que sí, que sos una IA que hace pocas preguntas para ayudarla a pensar qué le gusta, y que no decidís por ella. Después la pregunta.",
-  PROGRESS: "La persona preguntó cuánto falta. Decile que son 8 preguntas como mucho y que puede ver su perfil cuando quiera. Después la pregunta.",
+  PROGRESS: `La persona preguntó cuánto falta. Decile que son ${rubric.limits.maxQuestions ?? 8} preguntas como mucho y que puede ver su perfil cuando quiera. Después la pregunta.`,
 };

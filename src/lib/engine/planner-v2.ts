@@ -171,6 +171,23 @@ export function nextV2(s: SessionState): Action {
   // Presupuesto agotado: nunca una novena pregunta.
   if (asked >= LIMITS.maxQuestions) return { type: "CLOSE", level: lvl, reason: "budget" };
 
+  // Primera devolución breve: en 2-3 preguntas buscamos intereses y valores.
+  // Evitamos mini-resúmenes y profundizaciones que consumirían el presupuesto.
+  // El pedido explícito de cierre sigue teniendo prioridad.
+  if (LIMITS.maxQuestions <= 3) {
+    if (asked >= 2 && essentialsMet(s) && complementaryCount(s) >= 1) {
+      return { type: "CLOSE", level: lvl, reason: "sufficient" };
+    }
+    const covered = slotStatus(s);
+    const priorities: SlotId[] = asked <= 1
+      ? ["E2", "E3", "C1", "C2", "C3"]
+      : ["E3", "E2", "C1", "C2", "C3"];
+    const slot = priorities.find((k) => !covered[k] && slotAsks(s, k) < LIMITS.maxSlotAsks);
+    return slot
+      ? ask(s, last?.noInfo ? "OFFER_OPTIONS" : "ASK_SLOT", slot)
+      : { type: "CLOSE", level: lvl, reason: essentialsMet(s) ? "sufficient" : "stalled" };
+  }
+
   // Oferta de cierre: cualquier respuesta que no sea pedir el perfil cuenta como "Una pregunta más".
   const offerIdx = s.messages.findIndex((m) => m.role === "ASSISTANT" && m.action?.type === "OFFER_CLOSE");
   const closeOffered = s.closeOffered || offerIdx >= 0;

@@ -289,6 +289,8 @@ export function snapshot(s: SessionState) {
     expectations: act.filter((e) => e.indicatorId === "N4.EXPECT").map((e) => e.quote),
     openQuestions: openQuestions(s),
     contradictions: s.openContradictions,
+    // Lectura vocacional interpretativa según RIASEC, basada solo en evidencia y sin diagnósticos.
+    vocationalReading: vocationalReading(s),
     // v2 (demo, design.md §9): lo observado en lenguaje llano con su evidencia, lo que falta y si es provisional.
     ...feedbackV2(s),
   };
@@ -302,6 +304,38 @@ const OBSERVED_AREA: Record<Area, string> = {
   E: "Te tira organizar y llevar adelante cosas con otros",
   C: "Te tira ordenar y registrar",
 };
+/** Ámbitos de exploración asociados al marco RIASEC de Holland (no son capacidades medidas). */
+const RIASEC_EXPLORATION: Record<Area, string> = {
+  R: "resolver situaciones prácticas y trabajar con objetos, herramientas o actividades concretas",
+  I: "investigar, entender problemas y buscar explicaciones",
+  A: "crear, expresarte y experimentar con ideas",
+  S: "acompañar, enseñar o colaborar con otras personas",
+  E: "impulsar proyectos, organizar iniciativas y tomar decisiones",
+  C: "estructurar información, planificar y ordenar procesos",
+};
+
+/** Interpretación prudente: solo áreas con evidencia positiva de intereses; nunca basada en rechazos. */
+function vocationalReading(s: SessionState) {
+  const ev = active(s).filter((e) => e.polarity === 1 && weight(e) > 0 && e.indicatorId !== "N3.RECHAZO");
+  const scores = areaScores(ev);
+  const byScore = AREAS.filter((a) => scores[a] > 0 && ev.some((e) => e.area === a && /^N[23]\\./.test(e.indicatorId)))
+    .sort((a, b) => scores[b] - scores[a]);
+  const consistent = topAreas(ev);
+  const areas = (consistent.length ? consistent : byScore).slice(0, 2);
+  const evidenceIds = [...new Set(ev.filter((e) => areas.includes(e.area as Area) && /^N[23]\\./.test(e.indicatorId)).map((e) => e.id))];
+  const label = areas.map((a) => AREA_LABELS[a].toLowerCase()).join(" y ");
+  const limited = s.provisional || s.userTurns <= 3 || consistent.length === 0;
+  return {
+    title: areas.length ? `Tendencias ${label}` : "Todavía no se destacan intereses suficientes",
+    interpretation: areas.length
+      ? `Usando el marco vocacional RIASEC de Holland, aparecen indicios de interés por ${areas.map((a) => RIASEC_EXPLORATION[a]).join("; y por ")}. Esto sugiere actividades que podrías disfrutar explorando, no una carrera que debas elegir ni habilidades demostradas.`
+      : "Todavía no hay evidencia suficiente para identificar una tendencia vocacional concreta. Podés explorar opciones tentativas o ampliar tu perfil si querés.",
+    certainty: limited ? "Lectura exploratoria: pocas respuestas, hipótesis abiertas." : "Hay varios indicios coincidentes, pero falta contrastarlos en nuevas experiencias.",
+    evidenceIds,
+    disclaimer: "RIASEC es un marco para explorar intereses. Esta lectura breve no es un test psicológico validado, un diagnóstico ni una predicción de aptitudes.",
+  };
+}
+
 const UNKNOWN_SLOT: Record<SlotId, string> = {
   E1: "Todavía no sé cómo estás con esto de elegir qué hacer después.",
   E2: "Todavía no sé bien qué cosas disfrutás hacer.",

@@ -14,5 +14,5 @@ export async function POST(req: Request) {
     s.consents.push({ purpose: "mentors", version: CONSENT_VERSION, status: input.action === "grant" ? "granted" : "withdrawn", at: new Date().toISOString(), pathId: input.pathId });
     if (input.action === "withdraw") s.mentorResult = null;
     logEvent(input.action === "grant" ? "mentor.consent.granted" : "mentor.consent.required", { session: s.id, path: input.pathId });
-  });
+  }, req);
 }

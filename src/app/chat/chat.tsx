@@ -368,8 +368,8 @@ function Onboarding({ onStart }: { onStart: (v: View) => void }) {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">No hace falta que tengas todo claro. Vamos a explorar juntos.</h1>
       <div className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-5 text-sm leading-relaxed">
         <p>
-          <b>Qué es:</b> una charla con una IA que te hace preguntas para entender qué te gusta, qué te importa y qué tenés que tener en cuenta. Son unos 5
-          minutos y como máximo 8 preguntas, casi todas con opciones para tocar. Al final ves lo que entendió y, si querés, caminos para investigar.
+          <b>Qué es:</b> una charla con una IA que te hace preguntas para entender qué te gusta, qué te importa y qué tenés que tener en cuenta. Son 2 o 3
+          preguntas breves, con opciones para tocar. Al final ves tu primer perfil vocacional y, si querés, caminos para investigar.
         </p>
         <p>
           <b>Qué no es:</b> no es un test, no decide por vos y no reemplaza a un orientador o a un psicólogo.

@@ -96,8 +96,18 @@ export default function Result() {
       {v2 && <RiasecCode p={p} done={done} />}
 
       {v2 && (
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-semibold">Lo que observé</h2>
+        <section className="rounded-2xl border border-accent bg-card p-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Tu primer perfil vocacional</p>
+          <h2 className="mt-2 text-xl font-semibold">{p.vocationalReading.title}</h2>
+          <p className="mt-3 text-sm leading-relaxed">{p.vocationalReading.interpretation}</p>
+          <p className="mt-3 text-sm text-muted">{p.vocationalReading.certainty}</p>
+          <p className="mt-4 text-xs text-muted">{p.vocationalReading.disclaimer}</p>
+        </section>
+      )}
+
+      {v2 && (
+        <details className="rounded-2xl border border-border bg-card p-6">
+          <summary className="cursor-pointer font-semibold">Ver la evidencia detrás de esta interpretación</summary>
           {p.observed.length ? (
             <ul className="mt-3 space-y-3">
               {p.observed.map((o) => (
@@ -111,7 +121,7 @@ export default function Result() {
             <p className="mt-2 text-sm text-muted">Todavía no se destaca nada en particular, y está bien.</p>
           )}
           <p className="mt-4 rounded-xl bg-accent-soft p-3 text-xs text-accent">{p.disclaimer}</p>
-        </section>
+        </details>
       )}
 
       <section className={`rounded-2xl border border-border bg-card p-6 ${v2 ? "hidden" : ""}`}>
@@ -240,7 +250,7 @@ type Act = (label: string, path: string, body: unknown, method?: string) => Prom
 
 function Paths({ view, busy, act }: { view: View; busy: string | null; act: Act }) {
   const router = useRouter();
-  const [filters, setFilters] = useState<Filters>(view.filters as Filters);
+  const [filters, setFilters] = useState<Filters>({ ...view.filters, cost: "cualquiera" });
   const rec = view.recommendation;
   const selected = view.selectedPath;
   const set = <K extends keyof Filters>(k: K, v: Filters[K]) => setFilters((f) => ({ ...f, [k]: v }));
@@ -256,15 +266,14 @@ function Paths({ view, busy, act }: { view: View; busy: string | null; act: Act 
       {!rec && (
         <div className="rounded-2xl border border-border bg-card p-5">
           <h3 className="text-sm font-semibold">Antes de buscar, confirmá tus condiciones</h3>
-          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
             <Select label="Modalidad" value={filters.modality} onChange={(v) => set("modality", v as Filters["modality"])} options={[["cualquiera", "Cualquiera"], ["presencial", "Presencial"], ["distancia", "A distancia"]]} />
             <Select label="Horario" value={filters.schedule} onChange={(v) => set("schedule", v as Filters["schedule"])} options={[["cualquiera", "Cualquiera"], ["nocturno", "Nocturno"]]} />
-            <Select label="Costo" value={filters.cost} onChange={(v) => set("cost", v as Filters["cost"])} options={[["cualquiera", "Cualquiera"], ["gratuito", "Gratuito"]]} />
           </div>
           <p className="mt-2 text-xs text-muted">País: Uruguay. Las condiciones que contaste en la charla ya vienen marcadas.</p>
           <button
             disabled={busy !== null}
-            onClick={() => act("research", "/api/session/routes", { action: "research", filters })}
+            onClick={() => act("research", "/api/session/routes", { action: "research", filters: { ...filters, cost: "cualquiera" } })}
             className="mt-4 rounded-full bg-accent px-6 py-2.5 font-medium text-background disabled:opacity-60"
           >
             {busy === "research" ? "Buscando, verificando y eligiendo…" : "Mostrame caminos para investigar"}

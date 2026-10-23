@@ -5,6 +5,7 @@ import { llm } from "@/lib/llm/provider";
 import { AGE_MIN, MIN_AGE, greet, newSession } from "@/lib/engine/turn";
 import { clearSessionCookie, loadSession, publicView, setSessionCookie } from "@/lib/session";
 import { store } from "@/lib/store";
+import { browserPreviewEnabled, previewEnvelope } from "@/lib/preview-session";
 import { hasSupabase, supabaseServer } from "@/lib/supabase/server";
 
 const Create = z.object({
@@ -29,10 +30,12 @@ export async function POST(req: Request) {
   const s = newSession({ ageRange: input.ageRange, guardianConsent: Boolean(input.guardianConsent), model: provider.model, userId });
   await greet(provider, s);
   s.model = provider.model;
-  await store().save(s);
-  await setSessionCookie(s);
-  logEvent("session.created", { session: s.id, llm: provider.name, store: store().kind });
-  return Response.json(publicView(s));
+  if (!browserPreviewEnabled()) {
+    await store().save(s);
+    await setSessionCookie(s);
+  }
+  logEvent("session.created", { session: s.id, llm: provider.name, store: browserPreviewEnabled() ? "browser-preview" : store().kind });
+  return Response.json({ ...publicView(s), ...previewEnvelope(s) });
 }
 
 export async function GET() {

@@ -28,8 +28,8 @@ describe("rúbrica v2", () => {
   });
 
   test("tiene el presupuesto de 8 preguntas y los seis casilleros en orden de prioridad", () => {
-    expect(rubricV2.limits.maxQuestions).toBe(8);
-    expect(rubricV2.limits.targetQuestions).toEqual([5, 7]);
+    expect(rubricV2.limits.maxQuestions).toBe(3);
+    expect(rubricV2.limits.targetQuestions).toEqual([2, 3]);
     expect(rubricV2.slots?.map((s) => s.id)).toEqual([...SLOT_IDS]);
     const priorities = rubricV2.slots!.map((s) => s.priority);
     expect(priorities).toEqual([...priorities].sort((a, b) => a - b));

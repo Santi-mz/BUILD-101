@@ -19,7 +19,6 @@ export function suggestedFilters(s: SessionState): Filters {
   const barriers = active(s).filter((e) => e.indicatorId === "N4.BARRERA").map((e) => `${e.value ?? ""} ${e.quote}`.toLowerCase());
   const f = { ...DEFAULT_FILTERS };
   if (barriers.some((b) => /noche|nocturn/.test(b))) f.schedule = "nocturno";
-  if (barriers.some((b) => /gratu|costo|plata|pagar/.test(b))) f.cost = "gratuito";
   if (barriers.some((b) => /distancia|online|virtual/.test(b))) f.modality = "distancia";
   return f;
 }
@@ -45,6 +44,8 @@ export function agentContext(s: SessionState) {
 }
 
 export async function researchPaths(s: SessionState, filters: Filters, providers: CatalogProvider[] = defaultProviders()): Promise<RecommendationSet> {
+  // No aplicar restricciones por precios que aún no están verificados para esta demo.
+  filters = { ...filters, cost: "cualquiera" };
   s.phase = "RESEARCHING_OPTIONS";
   const { snap, pct, keywords } = agentContext(s);
   const riasec = Object.fromEntries(Object.entries(pct).map(([k, v]) => [k, v / 100]));
